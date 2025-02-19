@@ -4,21 +4,28 @@ const geom = @import("root.zig");
 const Vec2 = geom.Vec2;
 const Rotor2 = geom.Rotor2;
 
+/// A two dimensional column major transform matrix with the redundant components shaved off to save
+/// space.
 pub const Mat2x3 = packed struct {
+    /// The x basis vector.
     x: Col,
+    /// The y basis vector.
     y: Col,
 
+    /// `x` and `y` affect rotation, `a` affects translation.
     const Col = packed struct {
         x: f32,
         y: f32,
         a: f32,
     };
 
+    /// The identity matrix. Has no effect.
     pub const identity: @This() = .{
         .x = .{ .x = 1, .y = 0, .a = 0 },
         .y = .{ .x = 0, .y = 1, .a = 0 },
     };
 
+    /// Create a matrix from two basis vectors.
     pub fn fromBasis(x: Vec2, y: Vec2) Mat2x3 {
         return .{
             .x = .{ .x = x.x, .y = x.y, .a = 0.0 },
@@ -26,6 +33,7 @@ pub const Mat2x3 = packed struct {
         };
     }
 
+    /// Create a rotation matrix from a rotor.
     pub fn rotation(rotor: Rotor2) @This() {
         const inverse = rotor.inverse();
         const x = inverse.timesPoint(.x_pos);
@@ -33,6 +41,7 @@ pub const Mat2x3 = packed struct {
         return .fromBasis(x, y);
     }
 
+    /// Create a translation matrix from a vector.
     pub fn translation(delta: Vec2) @This() {
         return .{
             .x = .{ .x = 1, .y = 0, .a = delta.x },
@@ -40,6 +49,7 @@ pub const Mat2x3 = packed struct {
         };
     }
 
+    /// Returns `lhs` multiplied by `rhs`.
     pub fn times(lhs: @This(), rhs: @This()) @This() {
         return .{
             .x = .{
@@ -55,20 +65,26 @@ pub const Mat2x3 = packed struct {
         };
     }
 
+    /// Multiplies the vector by `other`.
     pub fn mul(self: *@This(), other: @This()) @This() {
         self.* = self.times(other);
     }
 
+    /// Gets the translation component of the matrix.
     pub fn getTranslation(self: @This()) Vec2 {
         return .{ .x = self.x.a, .y = self.y.a };
     }
 
+    /// Gets the rotation component of the matrix in radians. May be removed in the future, present
+    /// for compatibility with SDL APIs. Prefer using the matrix to transform points over attempting
+    /// to extract the angle from it.
     pub fn getAngle(self: @This()) f32 {
         const cos = self.x.x;
         const sin = self.x.y;
         return std.math.atan2(sin, cos);
     }
 
+    /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), point: Vec2) Vec2 {
         return .{
             .x = self.x.x * point.x + self.x.y * point.y + self.x.a,
@@ -76,6 +92,7 @@ pub const Mat2x3 = packed struct {
         };
     }
 
+    /// Returns a vector representing a direction transformed by this matrix.
     pub fn timesDir(self: @This(), point: Vec2) Vec2 {
         return .{
             .x = self.x.x * point.x + self.x.y * point.y,

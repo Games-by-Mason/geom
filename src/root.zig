@@ -1,3 +1,5 @@
+//! Geometry for game dev.
+
 const std = @import("std");
 
 pub const Vec2 = @import("vec2.zig").Vec2;
