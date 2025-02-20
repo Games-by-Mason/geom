@@ -2,6 +2,7 @@ const std = @import("std");
 const geom = @import("root.zig");
 
 const Rotor2 = geom.Rotor2;
+const Vec2 = geom.Vec2;
 
 /// An two dimensional oriented area.
 pub const Bivec2 = packed struct {
@@ -30,7 +31,7 @@ pub const Bivec2 = packed struct {
     }
 
     /// Returns the magnitude of the bivector.
-    pub fn mag(self: *Bivec2) void {
+    pub fn mag(self: Bivec2) f32 {
         return @abs(self.xy);
     }
 
@@ -43,20 +44,9 @@ pub const Bivec2 = packed struct {
     /// Raises `e` to the given bivector, resulting in a rotor that rotates on the plane of the
     /// given bivector by twice its magnitude in radians.
     pub fn exp(self: Bivec2) Rotor2 {
-        const neg_inner_product = self.xy * self.xy;
-        const half_angle_radians = @sqrt(neg_inner_product);
-
-        if (half_angle_radians == 0.0) {
-            return .{
-                .a = 1.0,
-                .xy = 0.0,
-            };
-        } else {
-            const sin_half_angle = @sin(half_angle_radians);
-            return .{
-                .a = @cos(half_angle_radians),
-                .xy = sin_half_angle * self.xy / half_angle_radians,
-            };
-        }
+        return .{
+            .xy = -@sin(self.xy),
+            .a = @cos(self.xy),
+        };
     }
 };

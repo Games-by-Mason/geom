@@ -4,6 +4,12 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const test_filters = b.option(
+        []const []const u8,
+        "test-filter",
+        "Skip tests that do not match the specified filters.",
+    ) orelse &.{};
+
     const math = b.addModule("geom", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
@@ -12,6 +18,7 @@ pub fn build(b: *std.Build) void {
 
     const lib_unit_tests = b.addTest(.{
         .root_module = math,
+        .filters = test_filters,
     });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
