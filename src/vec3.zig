@@ -3,187 +3,163 @@ const geom = @import("root.zig");
 
 const math = std.math;
 
-const Vec3 = geom.Vec3;
+const Vec2 = geom.Vec2;
 const Bivec2 = geom.Bivec2;
 const Rotor2 = geom.Rotor2;
 
 /// A two dimensional vector.
-pub const Vec2 = packed struct {
+pub const Vec3 = packed struct {
     x: f32,
     y: f32,
+    z: f32,
 
     /// The zero vector.
-    pub const zero: Vec2 = .{ .x = 0, .y = 0 };
+    pub const zero: Vec3 = .{ .x = 0, .y = 0, .z = 0.0 };
     /// The positive x axis.
-    pub const x_pos: Vec2 = .{ .x = 1, .y = 0 };
+    pub const x_pos: Vec3 = .{ .x = 1, .y = 0, .z = 0.0 };
     /// The negative x axis.
-    pub const x_neg: Vec2 = .{ .x = -1, .y = 0 };
+    pub const x_neg: Vec3 = .{ .x = -1, .y = 0, .z = 0.0 };
     /// The positive y axis.
-    pub const y_pos: Vec2 = .{ .x = 0, .y = 1 };
+    pub const y_pos: Vec3 = .{ .x = 0, .y = 1, .z = 0.0 };
     /// The negative y axis.
-    pub const y_neg: Vec2 = .{ .x = 0, .y = -1 };
-
-    /// Returns the unit vector in the given direction.
-    pub fn unit(rad: f32) Vec2 {
-        return .{
-            .x = @cos(rad),
-            .y = @sin(rad),
-        };
-    }
+    pub const y_neg: Vec3 = .{ .x = 0, .y = -1, .z = 0.0 };
+    /// The positive z axis.
+    pub const z_pos: Vec3 = .{ .x = 0, .y = 0, .z = 1.0 };
+    /// The negative z axis.
+    pub const z_neg: Vec3 = .{ .x = 0, .y = 0, .z = -1.0 };
 
     /// Returns the vector scaled by `factor`.
-    pub fn scaled(self: Vec2, factor: f32) Vec2 {
+    pub fn scaled(self: Vec3, factor: f32) Vec3 {
         return .{
             .x = self.x * factor,
             .y = self.y * factor,
+            .z = self.z * factor,
         };
     }
 
     /// Scales the vector by `factor`.
-    pub fn scale(self: *Vec2, factor: f32) Vec2 {
+    pub fn scale(self: *Vec3, factor: f32) Vec3 {
         self.* = self.scaled(factor);
     }
 
     /// Returns the vector added to `other`.
-    pub fn plus(self: Vec2, other: Vec2) Vec2 {
+    pub fn plus(self: Vec3, other: Vec3) Vec3 {
         return .{
             .x = self.x + other.x,
             .y = self.y + other.y,
+            .z = self.z + other.z,
         };
     }
 
     /// Adds `other` to the vector.
-    pub fn add(self: *Vec2, other: Vec2) void {
+    pub fn add(self: *Vec3, other: Vec3) void {
         self.* = self.plus(other);
     }
 
     /// Returns the vector added to `other` scaled by `factor`
-    pub fn plusScaled(self: Vec2, other: Vec2, factor: f32) Vec2 {
+    pub fn plusScaled(self: Vec3, other: Vec3, factor: f32) Vec3 {
         return .{
             .x = self.x + other.x * factor,
             .y = self.y + other.y * factor,
+            .z = self.z + other.z * factor,
         };
     }
 
     /// Adds `other` scaled by `factor` to the vector.
-    pub fn addScaled(self: *Vec2, other: Vec2, factor: f32) void {
+    pub fn addScaled(self: *Vec3, other: Vec3, factor: f32) void {
         self.* = self.plus(other, factor);
     }
 
     /// Returns `other` subtracted from the vector.
-    pub fn minus(self: Vec2, other: Vec2) Vec2 {
+    pub fn minus(self: Vec3, other: Vec3) Vec3 {
         return .{
             .x = self.x - other.x,
             .y = self.y - other.y,
+            .z = self.z - other.z,
         };
     }
 
     /// Subtracts `other` from the vector.
-    pub fn sub(self: *Vec2, other: Vec2) void {
+    pub fn sub(self: *Vec3, other: Vec3) void {
         self.* = self.minus(other);
     }
 
     /// Returns the vector with its components floored.
-    pub fn floored(self: Vec2) Vec2 {
+    pub fn floored(self: Vec3) Vec3 {
         return .{
             .x = @floor(self.x),
             .y = @floor(self.y),
+            .z = @floor(self.z),
         };
     }
 
     /// Floors all components of the vector.
-    pub fn floor(self: *Vec2) Vec2 {
+    pub fn floor(self: *Vec3) Vec3 {
         self.* = self.floored();
     }
 
     /// Returns vector negated.
-    pub fn negated(self: Vec2) Vec2 {
+    pub fn negated(self: Vec3) Vec3 {
         return .{
             .x = -self.x,
             .y = -self.y,
+            .z = -self.z,
         };
     }
 
     /// Negates the vector.
-    pub fn negate(self: *Vec2) void {
+    pub fn negate(self: *Vec3) void {
         self.* = self.negated();
     }
 
     /// Returns the squared magnitude.
-    pub fn magSq(self: Vec2) f32 {
-        return self.x * self.x + self.y * self.y;
+    pub fn magSq(self: Vec3) f32 {
+        return self.x * self.x + self.y * self.y + self.z * self.z;
     }
 
     /// Returns the magnitude.
-    pub fn mag(self: Vec2) f32 {
+    pub fn mag(self: Vec3) f32 {
         return @sqrt(self.magSq());
     }
 
     /// Returns the squared distance between two vectors.
-    pub fn distSq(self: Vec2, other: Vec2) f32 {
+    pub fn distSq(self: Vec3, other: Vec3) f32 {
         return self.minus(other).magSq();
     }
 
     /// Returns the distance between two vectors.
-    pub fn dist(self: Vec2, other: Vec2) f32 {
+    pub fn dist(self: Vec3, other: Vec3) f32 {
         return @sqrt(self.distSq(other));
     }
 
     /// Returns the vector normalized.
-    pub fn normalized(self: Vec2) Vec2 {
+    pub fn normalized(self: Vec3) Vec3 {
         const len = self.mag();
         if (len == 0) return self;
         return self.scaled(1.0 / len);
     }
 
     /// Normalizes the vector.
-    pub fn normalize(self: *Vec2) Vec2 {
+    pub fn normalize(self: *Vec3) Vec3 {
         self.* = self.normalized();
     }
 
     /// Returns the component wise product of two vectors.
-    pub fn compProd(self: Vec2, other: Vec2) Vec2 {
+    pub fn compProd(self: Vec3, other: Vec3) Vec3 {
         return .{
             .x = self.x * other.x,
             .y = self.y * other.y,
+            .z = self.z * other.z,
         };
     }
 
     /// Returns the inner product of two vectors. Equivalent to the dot product.
-    pub fn innerProd(self: Vec2, other: Vec2) f32 {
-        return self.x * other.x + self.y * other.y;
+    pub fn innerProd(self: Vec3, other: Vec3) f32 {
+        return self.x * other.x + self.y * other.y + self.z * other.z;
     }
 
-    /// Returns the outer product of two vectors. Generalized form of the cross product.
-    pub fn outerProd(lhs: Vec2, rhs: Vec2) Bivec2 {
-        return .{
-            .xy = lhs.x * rhs.y - rhs.x * lhs.y,
-        };
-    }
-
-    /// Returns the geometric product of two vectors.
-    pub fn geomProd(lhs: Vec2, rhs: Vec2) Rotor2 {
-        return .{
-            .xy = lhs.outerProd(rhs).xy,
-            .a = lhs.innerProd(rhs) + 1.0,
-        };
-    }
-
-    /// Returns the normal to the vector. Assumes the vector is already normalized.
-    pub fn normal(self: Vec2) Vec2 {
-        return .{
-            .x = -self.y,
-            .y = self.x,
-        };
-    }
-
-    /// Returns the equivalent homogeneous point.
-    pub fn point(self: Vec2) Vec3 {
-        return .{ .x = self.x, .y = self.y, .z = 1.0 };
-    }
-
-    /// Returns the equivalent homogeneous direction.
-    pub fn dir(self: Vec2) Vec3 {
-        return .{ .x = self.x, .y = self.y, .z = 0.0 };
+    /// Returns the x and y components.
+    pub fn xy(self: Vec3) Vec2 {
+        return .{ .x = self.x, .y = self.y };
     }
 };
