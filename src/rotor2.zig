@@ -23,6 +23,11 @@ pub const Rotor2 = extern struct {
     /// The identity rotor. Has no effect.
     pub const identity: Rotor2 = .{ .xy = 0.0, .a = 1.0 };
 
+    /// Checks for equality.
+    pub fn eql(self: Rotor2, other: Rotor2) bool {
+        return std.meta.eql(self, other);
+    }
+
     /// Creates a rotor that rotates along the shortest path from `from` to `to`. `from` and `to`
     /// must be normalized.
     ///

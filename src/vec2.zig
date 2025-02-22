@@ -23,6 +23,11 @@ pub const Vec2 = extern struct {
     /// The negative y axis.
     pub const y_neg: Vec2 = .{ .x = 0, .y = -1 };
 
+    /// Checks for equality.
+    pub fn eql(self: Vec2, other: Vec2) bool {
+        return std.meta.eql(self, other);
+    }
+
     /// Returns the unit vector in the given direction.
     pub fn unit(rad: f32) Vec2 {
         return .{

@@ -28,6 +28,11 @@ pub const Vec3 = extern struct {
     /// The negative z axis.
     pub const z_neg: Vec3 = .{ .x = 0, .y = 0, .z = -1.0 };
 
+    /// Checks for equality.
+    pub fn eql(self: Vec3, other: Vec3) bool {
+        return std.meta.eql(self, other);
+    }
+
     /// Returns the vector scaled by `factor`.
     pub fn scaled(self: Vec3, factor: f32) Vec3 {
         return .{

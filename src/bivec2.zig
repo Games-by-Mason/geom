@@ -10,6 +10,11 @@ pub const Bivec2 = extern struct {
     /// the direction.
     xy: f32,
 
+    /// Checks for equality.
+    pub fn eql(self: Bivec2, other: Bivec2) bool {
+        return std.meta.eql(self, other);
+    }
+
     /// Returns the bivector scaled by `factor`.
     pub fn scaled(self: Bivec2, factor: f32) Bivec2 {
         return .{ .xy = self.xy * factor };

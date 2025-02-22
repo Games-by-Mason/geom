@@ -18,6 +18,11 @@ pub const Mat2x3 = extern struct {
         .r1 = .{ .x = 0, .y = 1, .z = 0 },
     };
 
+    /// Checks for equality.
+    pub fn eql(self: Mat2x3, other: Mat2x3) bool {
+        return std.meta.eql(self, other);
+    }
+
     /// Create a rotation matrix from a rotor.
     pub fn rotation(rotor: Rotor2) @This() {
         const inverse = rotor.inverse();
