@@ -8,7 +8,7 @@ const Bivec2 = geom.Bivec2;
 const Rotor2 = geom.Rotor2;
 
 /// A two dimensional vector.
-pub const Vec3 = packed struct {
+pub const Vec3 = extern struct {
     x: f32,
     y: f32,
     z: f32,
@@ -59,9 +59,9 @@ pub const Vec3 = packed struct {
     /// Returns the vector added to `other` scaled by `factor`
     pub fn plusScaled(self: Vec3, other: Vec3, factor: f32) Vec3 {
         return .{
-            .x = self.x + other.x * factor,
-            .y = self.y + other.y * factor,
-            .z = self.z + other.z * factor,
+            .x = @mulAdd(f32, other.x, factor, self.x),
+            .y = @mulAdd(f32, other.y, factor, self.y),
+            .z = @mulAdd(f32, other.z, factor, self.z),
         };
     }
 
@@ -100,11 +100,7 @@ pub const Vec3 = packed struct {
 
     /// Returns vector negated.
     pub fn negated(self: Vec3) Vec3 {
-        return .{
-            .x = -self.x,
-            .y = -self.y,
-            .z = -self.z,
-        };
+        return self.scaled(-1);
     }
 
     /// Negates the vector.
@@ -114,7 +110,7 @@ pub const Vec3 = packed struct {
 
     /// Returns the squared magnitude.
     pub fn magSq(self: Vec3) f32 {
-        return self.x * self.x + self.y * self.y + self.z * self.z;
+        return self.innerProd(self);
     }
 
     /// Returns the magnitude.
@@ -155,7 +151,9 @@ pub const Vec3 = packed struct {
 
     /// Returns the inner product of two vectors. Equivalent to the dot product.
     pub fn innerProd(self: Vec3, other: Vec3) f32 {
-        return self.x * other.x + self.y * other.y + self.z * other.z;
+        const yz = @mulAdd(f32, self.y, other.y, self.z * other.z);
+        const xyz = @mulAdd(f32, self.x, other.x, yz);
+        return xyz;
     }
 
     /// Returns the x and y components.

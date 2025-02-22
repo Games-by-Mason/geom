@@ -8,7 +8,7 @@ const Bivec2 = geom.Bivec2;
 const Rotor2 = geom.Rotor2;
 
 /// A two dimensional vector.
-pub const Vec2 = packed struct {
+pub const Vec2 = extern struct {
     x: f32,
     y: f32,
 
@@ -60,14 +60,14 @@ pub const Vec2 = packed struct {
     /// Returns the vector added to `other` scaled by `factor`
     pub fn plusScaled(self: Vec2, other: Vec2, factor: f32) Vec2 {
         return .{
-            .x = self.x + other.x * factor,
-            .y = self.y + other.y * factor,
+            .x = @mulAdd(f32, other.x, factor, self.x),
+            .y = @mulAdd(f32, other.y, factor, self.y),
         };
     }
 
     /// Adds `other` scaled by `factor` to the vector.
     pub fn addScaled(self: *Vec2, other: Vec2, factor: f32) void {
-        self.* = self.plus(other, factor);
+        self.* = self.plusScaled(other, factor);
     }
 
     /// Returns `other` subtracted from the vector.
@@ -98,10 +98,7 @@ pub const Vec2 = packed struct {
 
     /// Returns vector negated.
     pub fn negated(self: Vec2) Vec2 {
-        return .{
-            .x = -self.x,
-            .y = -self.y,
-        };
+        return self.scaled(-1);
     }
 
     /// Negates the vector.
@@ -111,7 +108,7 @@ pub const Vec2 = packed struct {
 
     /// Returns the squared magnitude.
     pub fn magSq(self: Vec2) f32 {
-        return self.x * self.x + self.y * self.y;
+        return self.innerProd(self);
     }
 
     /// Returns the magnitude.
@@ -151,13 +148,13 @@ pub const Vec2 = packed struct {
 
     /// Returns the inner product of two vectors. Equivalent to the dot product.
     pub fn innerProd(self: Vec2, other: Vec2) f32 {
-        return self.x * other.x + self.y * other.y;
+        return @mulAdd(f32, self.x, other.x, self.y * other.y);
     }
 
     /// Returns the outer product of two vectors. Generalized form of the cross product.
     pub fn outerProd(lhs: Vec2, rhs: Vec2) Bivec2 {
         return .{
-            .xy = lhs.x * rhs.y - rhs.x * lhs.y,
+            .xy = @mulAdd(f32, lhs.x, rhs.y, -rhs.x * lhs.y),
         };
     }
 

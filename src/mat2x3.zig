@@ -6,7 +6,7 @@ const Vec3 = geom.Vec3;
 const Rotor2 = geom.Rotor2;
 
 /// A row major affine transformation matrix for working in two dimensions.
-pub const Mat2x3 = packed struct {
+pub const Mat2x3 = extern struct {
     /// Row 0, the x basis vector.
     r0: Vec3,
     /// Row 1, the y basis vector.
@@ -49,14 +49,14 @@ pub const Mat2x3 = packed struct {
     pub fn times(lhs: @This(), rhs: @This()) @This() {
         return .{
             .r0 = .{
-                .x = lhs.r0.x * rhs.r0.x + lhs.r0.y * rhs.r1.x,
-                .y = lhs.r0.x * rhs.r0.y + lhs.r0.y * rhs.r1.y,
-                .z = lhs.r0.x * rhs.r0.z + lhs.r0.y * rhs.r1.z + lhs.r0.z,
+                .x = @mulAdd(f32, lhs.r0.x, rhs.r0.x, lhs.r0.y * rhs.r1.x),
+                .y = @mulAdd(f32, lhs.r0.x, rhs.r0.y, lhs.r0.y * rhs.r1.y),
+                .z = @mulAdd(f32, lhs.r0.x, rhs.r0.z, @mulAdd(f32, lhs.r0.y, rhs.r1.z, lhs.r0.z)),
             },
             .r1 = .{
-                .x = lhs.r1.x * rhs.r0.x + lhs.r1.y * rhs.r1.x,
-                .y = lhs.r1.x * rhs.r0.y + lhs.r1.y * rhs.r1.y,
-                .z = lhs.r1.x * rhs.r0.z + lhs.r1.y * rhs.r1.z + lhs.r1.z,
+                .x = @mulAdd(f32, lhs.r1.x, rhs.r0.x, lhs.r1.y * rhs.r1.x),
+                .y = @mulAdd(f32, lhs.r1.x, rhs.r0.y, lhs.r1.y * rhs.r1.y),
+                .z = @mulAdd(f32, lhs.r1.x, rhs.r0.z, @mulAdd(f32, lhs.r1.y, rhs.r1.z, lhs.r1.z)),
             },
         };
     }
@@ -94,7 +94,10 @@ pub const Mat2x3 = packed struct {
 
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec2) Vec2 {
-        return self.timesVec3(v.point()).xy();
+        return .{
+            .x = self.r0.innerProd(v.point()),
+            .y = self.r1.innerProd(v.point()),
+        };
     }
 
     /// Returns a vector representing a direction transformed by this matrix.
@@ -107,7 +110,7 @@ pub const Mat2x3 = packed struct {
         return .{
             .x = self.r0.innerProd(v),
             .y = self.r1.innerProd(v),
-            .z = (Vec3{ .x = 0.0, .y = 0.0, .z = 1.0 }).innerProd(v),
+            .z = Vec3.z_pos.innerProd(v),
         };
     }
 };

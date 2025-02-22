@@ -10,7 +10,7 @@ const Mat2x3 = geom.Mat2x3;
 /// A two dimensional rotor. Rotors are a generalized form of quaternions which are used for
 /// rotation. Unlike quaternions, rotors generalize to all dimensions. Rotors can represent up to
 /// two full rotations, at which point they wrap back around.
-pub const Rotor2 = packed struct {
+pub const Rotor2 = extern struct {
     /// The component that rotates from x to y along the xy plane.
     ///
     /// Equivalent to the negative sine of half the rotation.
@@ -76,7 +76,7 @@ pub const Rotor2 = packed struct {
 
     /// Returns the squared magnitude of the rotor.
     pub fn magSq(self: Rotor2) f32 {
-        return self.a * self.a + self.xy * self.xy;
+        return @mulAdd(f32, self.xy, self.xy, self.a * self.a);
     }
 
     /// Returns the magnitude of the rotor.
@@ -114,7 +114,7 @@ pub const Rotor2 = packed struct {
     /// Returns the cosine of the half angle between the two given normalized rotors. If the result
     /// is negative, they are more than a full rotation apart. If it is positive they are not.
     pub fn neighborhood(self: Rotor2, other: Rotor2) f32 {
-        return self.a * other.a + self.xy * other.xy;
+        return @mulAdd(f32, self.xy, other.xy, self.a * self.a);
     }
 
     /// Returns a normalized rotor. If the magnitude is 0 the result will be a rotor filled with
@@ -131,21 +131,21 @@ pub const Rotor2 = packed struct {
     /// Applies the rotor to a vector.
     pub fn timesVec2(self: Rotor2, point: Vec2) Vec2 {
         // temp = -rotor * point
-        const x = self.a * point.x - self.xy * point.y;
-        const y = self.a * point.y + self.xy * point.x;
+        const x = @mulAdd(f32, self.a, point.x, -self.xy * point.y);
+        const y = @mulAdd(f32, self.a, point.y, self.xy * point.x);
 
         // temp * rotor
         return .{
-            .x = x * self.a - y * self.xy,
-            .y = x * self.xy + y * self.a,
+            .x = @mulAdd(f32, x, self.a, -y * self.xy),
+            .y = @mulAdd(f32, x, self.xy, y * self.a),
         };
     }
 
     /// Returns the rotor multiplied by other. This lets you compose rotations. Order matters.
     pub fn times(self: Rotor2, other: Rotor2) Rotor2 {
         return .{
-            .a = -self.xy * other.xy + self.a * other.a,
-            .xy = self.xy * other.a + self.a * other.xy,
+            .a = @mulAdd(f32, -self.xy, other.xy, self.a * other.a),
+            .xy = @mulAdd(f32, self.xy, other.a, self.a * other.xy),
         };
     }
 
@@ -163,8 +163,9 @@ pub const Rotor2 = packed struct {
 
     /// Spherically linearly interpolates between two rotors. See also `nlerp`.
     ///
-    /// Interpolates a constant velocity, but is computationally heavy and is not commutative. If
-    /// `t` is outside of the [0, 1] range, the rotation will continue past the start or end.
+    /// Interpolates a constant velocity, but is computationally heavy and is not commutative. Not
+    /// exact at the beginning/end of ranges. If `t` is outside of the [0, 1] range, the rotation
+    /// will continue past the start or end.
     pub fn slerp(start: Rotor2, end: Rotor2, t: f32) Rotor2 {
         return start.times(start.inverse().times(end).ln().scaled(t).exp());
     }
@@ -422,7 +423,12 @@ fn testInterpolation(large_angles: bool, interp: *const fn (Rotor2, Rotor2, f32)
     try std.testing.expectEqual(r_xy90, interp(r_xy90, r_xy90, 0.0));
     try std.testing.expectEqual(r_xy90, interp(r_xy90, r_xy90, 0.5));
     try std.testing.expectEqual(r_xy90, interp(r_xy90, r_xy90, 1.0));
-    try std.testing.expectEqual(r_xy90, interp(r_xy90, r_xy90, 2.0));
+    if (large_angles) {
+        // Slerp is not exact here
+        try expectRotor2ApproxEql(r_xy90, interp(r_xy90, r_xy90, 2.0));
+    } else {
+        try std.testing.expectEqual(r_xy90, interp(r_xy90, r_xy90, 2.0));
+    }
     try std.testing.expectEqual(r_xy90, interp(r_xy90, r_xy90, -1.0));
 
     // Test interpolating between r0 and perpendicular rotors
@@ -434,7 +440,12 @@ fn testInterpolation(large_angles: bool, interp: *const fn (Rotor2, Rotor2, f32)
         try std.testing.expectEqual(r_yx90, interp(r_0, r_xy90, -1.0));
     }
 
-    try std.testing.expectEqual(r_0, interp(r_xy90, r_0, 1.0));
+    if (large_angles) {
+        // Slerp is not exact here
+        try expectRotor2ApproxEql(r_0, interp(r_xy90, r_0, 1.0));
+    } else {
+        try std.testing.expectEqual(r_0, interp(r_xy90, r_0, 1.0));
+    }
     try expectRotor2ApproxEql(r_xy45, interp(r_xy90, r_0, 0.5));
     try std.testing.expectEqual(r_xy90, interp(r_xy90, r_0, 0.0));
     if (large_angles) {

@@ -5,7 +5,7 @@ const Rotor2 = geom.Rotor2;
 const Vec2 = geom.Vec2;
 
 /// An two dimensional oriented area.
-pub const Bivec2 = packed struct {
+pub const Bivec2 = extern struct {
     /// The area on the xy plane, incidentally the only plane in two dimensions. The sign represents
     /// the direction.
     xy: f32,
