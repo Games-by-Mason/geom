@@ -43,9 +43,13 @@ pub const Rotor2 = extern struct {
     }
 
     /// Creates a rotor that rotates from the positive y axis to the given direction. Assumes `dir`
-    /// is normalized.
+    /// is normalized. If `dir` is `.zero`, `.identity` is returned.
     pub fn look(dir: Vec2) Rotor2 {
         return .fromTo(.y_pos, dir);
+    }
+
+    test "look zero" {
+        try std.testing.expectEqual(Rotor2.identity, Rotor2.look(.zero));
     }
 
     /// Returns the rotor with all components scaled by the given factor. This does not scale the

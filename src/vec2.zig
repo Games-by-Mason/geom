@@ -131,14 +131,18 @@ pub const Vec2 = extern struct {
         return @sqrt(self.distSq(other));
     }
 
-    /// Returns the vector normalized.
+    /// Returns the vector normalized. If the vector is `.zero`, it is returned unchanged.
     pub fn normalized(self: Vec2) Vec2 {
         const len = self.mag();
         if (len == 0) return self;
         return self.scaled(1.0 / len);
     }
 
-    /// Normalizes the vector.
+    test "normalize zero" {
+        try std.testing.expectEqual(Vec2.zero, Vec2.normalized(.zero));
+    }
+
+    /// Normalizes the vector. See `normalized`.
     pub fn normalize(self: *Vec2) Vec2 {
         self.* = self.normalized();
     }
@@ -171,12 +175,17 @@ pub const Vec2 = extern struct {
         };
     }
 
-    /// Returns the normal to the vector. Assumes the vector is already normalized.
+    /// Returns the normal to the vector. Assumes the vector is already normalized. If the vector
+    /// is `.zero`, it is returned unchanged.
     pub fn normal(self: Vec2) Vec2 {
         return .{
             .x = -self.y,
             .y = self.x,
         };
+    }
+
+    test "normal zero" {
+        try std.testing.expectEqual(Vec2.zero, Vec2.normal(.zero));
     }
 
     /// Returns the equivalent homogeneous point.

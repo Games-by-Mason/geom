@@ -133,14 +133,18 @@ pub const Vec3 = extern struct {
         return @sqrt(self.distSq(other));
     }
 
-    /// Returns the vector normalized.
+    /// Returns the vector normalized. If the vector is `.zero`, returns it unchanged.
     pub fn normalized(self: Vec3) Vec3 {
         const len = self.mag();
         if (len == 0) return self;
         return self.scaled(1.0 / len);
     }
 
-    /// Normalizes the vector.
+    test "normalized zero" {
+        try std.testing.expectEqual(Vec3.zero, Vec3.zero.normalized());
+    }
+
+    /// Normalizes the vector. See `normalized`.
     pub fn normalize(self: *Vec3) Vec3 {
         self.* = self.normalized();
     }

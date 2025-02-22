@@ -10,6 +10,9 @@ pub const Bivec2 = extern struct {
     /// the direction.
     xy: f32,
 
+    /// The zero bivector.
+    pub const zero: Bivec2 = .{ .xy = 0.0 };
+
     /// Checks for equality.
     pub fn eql(self: Bivec2, other: Bivec2) bool {
         return std.meta.eql(self, other);
@@ -25,12 +28,17 @@ pub const Bivec2 = extern struct {
         self.* = self.scaled(factor);
     }
 
-    /// Returns the normalized bivector.
+    /// Returns the normalized bivector. If the bivector is 0, it is returned unchanged.
     pub fn normalized(self: Bivec2) Bivec2 {
+        if (self.xy == 0.0) return self;
         return .{ .xy = self.xy / self.xy };
     }
 
-    /// Normalizes the bivector.
+    test "normalized zero" {
+        try std.testing.expectEqual(Bivec2.zero, Bivec2.zero.normalized());
+    }
+
+    /// Normalizes the bivector. See `normalized`.
     pub fn normalize(self: *Bivec2) void {
         self.* = self.normalized();
     }
