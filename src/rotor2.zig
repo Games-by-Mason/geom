@@ -7,6 +7,8 @@ const Vec2 = geom.Vec2;
 const Bivec2 = geom.Bivec2;
 const Mat2x3 = geom.Mat2x3;
 
+const lerp = geom.ease.lerp;
+
 /// A two dimensional rotor. Rotors are a generalized form of quaternions which are used for
 /// rotation. Unlike quaternions, rotors generalize to all dimensions. Rotors can represent up to
 /// two full rotations, at which point they wrap back around.
@@ -187,8 +189,8 @@ pub const Rotor2 = extern struct {
     /// constant within the 0 to PI/2 range, it gets worse the closer the angle is to 2PI.
     pub fn nlerp(start: Rotor2, end: Rotor2, t: f32) Rotor2 {
         var result: Rotor2 = .{
-            .xy = std.math.lerp(start.xy, end.xy, t),
-            .a = std.math.lerp(start.a, end.a, t),
+            .xy = lerp(start.xy, end.xy, t),
+            .a = lerp(start.a, end.a, t),
         };
 
         const res_mag = result.mag();
