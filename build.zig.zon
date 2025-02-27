@@ -2,6 +2,12 @@
     .name = "geom",
     .version = "0.0.0",
     .minimum_zig_version = "0.14.0-dev.3268+0cf6ae290",
+    .dependencies = .{
+        .tween = .{
+            .url = "https://github.com/Games-by-Mason/Tween/archive/c616dea8fcdbf17ad91dacf2aa9331d48f94c297.zip",
+            .hash = "12207075d3c2d3e6226ad56aeed53a5272adc1c4ccca45cbec32472229d4f56a70e7",
+        },
+    },
     .paths = .{
         "build.zig",
         "build.zig.zon",

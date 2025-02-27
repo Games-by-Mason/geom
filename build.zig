@@ -3,7 +3,6 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-
     const test_filters = b.option(
         []const []const u8,
         "test-filter",
@@ -15,6 +14,12 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    const tween = b.dependency("tween", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    geom.addImport("tween", tween.module("tween"));
 
     const lib_unit_tests = b.addTest(.{
         .root_module = geom,

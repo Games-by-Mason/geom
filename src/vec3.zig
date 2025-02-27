@@ -33,6 +33,11 @@ pub const Vec3 = extern struct {
         return std.meta.eql(self, other);
     }
 
+    test eql {
+        try std.testing.expect(Vec3.y_pos.eql(Vec3.y_pos));
+        try std.testing.expect(!Vec3.y_pos.eql(Vec3.x_pos));
+    }
+
     /// Returns the vector scaled by `factor`.
     pub fn scaled(self: Vec3, factor: f32) Vec3 {
         return .{
@@ -42,9 +47,21 @@ pub const Vec3 = extern struct {
         };
     }
 
+    test scaled {
+        var v: Vec3 = .{ .x = 1.0, .y = 2.0, .z = 3.0 };
+        v = v.scaled(2.0);
+        try std.testing.expectEqual(Vec3{ .x = 2.0, .y = 4.0, .z = 6.0 }, v);
+    }
+
     /// Scales the vector by `factor`.
-    pub fn scale(self: *Vec3, factor: f32) Vec3 {
+    pub fn scale(self: *Vec3, factor: f32) void {
         self.* = self.scaled(factor);
+    }
+
+    test scale {
+        var v: Vec3 = .{ .x = 1.0, .y = 2.0, .z = 3.0 };
+        v.scale(2.0);
+        try std.testing.expectEqual(Vec3{ .x = 2.0, .y = 4.0, .z = 6.0 }, v);
     }
 
     /// Returns the vector added to `other`.
@@ -56,9 +73,21 @@ pub const Vec3 = extern struct {
         };
     }
 
+    test plus {
+        var v: Vec3 = .{ .x = 1.0, .y = 2.0, .z = 3.0 };
+        v = v.plus(.{ .x = 2.0, .y = 3.0, .z = 0.5 });
+        try std.testing.expectEqual(Vec3{ .x = 3.0, .y = 5.0, .z = 3.5 }, v);
+    }
+
     /// Adds `other` to the vector.
     pub fn add(self: *Vec3, other: Vec3) void {
         self.* = self.plus(other);
+    }
+
+    test add {
+        var v: Vec3 = .{ .x = 1.0, .y = 2.0, .z = 3.0 };
+        v.add(.{ .x = 2.0, .y = 3.0, .z = 0.5 });
+        try std.testing.expectEqual(Vec3{ .x = 3.0, .y = 5.0, .z = 3.5 }, v);
     }
 
     /// Returns the vector added to `other` scaled by `factor`
@@ -70,9 +99,21 @@ pub const Vec3 = extern struct {
         };
     }
 
+    test plusScaled {
+        var v: Vec3 = .{ .x = 1.0, .y = 2.0, .z = 3.0 };
+        v = v.plusScaled(.{ .x = 2.0, .y = 3.0, .z = 4.0 }, 2.0);
+        try std.testing.expectEqual(Vec3{ .x = 5.0, .y = 8.0, .z = 11.0 }, v);
+    }
+
     /// Adds `other` scaled by `factor` to the vector.
     pub fn addScaled(self: *Vec3, other: Vec3, factor: f32) void {
-        self.* = self.plus(other, factor);
+        self.* = self.plusScaled(other, factor);
+    }
+
+    test addScaled {
+        var v: Vec3 = .{ .x = 1.0, .y = 2.0, .z = 3.0 };
+        v.addScaled(.{ .x = 2.0, .y = 3.0, .z = 4.0 }, 2.0);
+        try std.testing.expectEqual(Vec3{ .x = 5.0, .y = 8.0, .z = 11.0 }, v);
     }
 
     /// Returns `other` subtracted from the vector.
@@ -84,9 +125,21 @@ pub const Vec3 = extern struct {
         };
     }
 
+    test minus {
+        var v: Vec3 = .{ .x = 1.0, .y = 2.0, .z = 3.0 };
+        v = v.minus(.{ .x = 2.0, .y = 4.0, .z = 6.0 });
+        try std.testing.expectEqual(Vec3{ .x = -1.0, .y = -2.0, .z = -3.0 }, v);
+    }
+
     /// Subtracts `other` from the vector.
     pub fn sub(self: *Vec3, other: Vec3) void {
         self.* = self.minus(other);
+    }
+
+    test sub {
+        var v: Vec3 = .{ .x = 1.0, .y = 2.0, .z = 3.0 };
+        v.sub(.{ .x = 2.0, .y = 4.0, .z = 6.0 });
+        try std.testing.expectEqual(Vec3{ .x = -1.0, .y = -2.0, .z = -3.0 }, v);
     }
 
     /// Returns the vector with its components floored.
@@ -98,9 +151,21 @@ pub const Vec3 = extern struct {
         };
     }
 
+    test floored {
+        var v: Vec3 = .{ .x = 1.5, .y = 2.1, .z = 3.9 };
+        v = v.floored();
+        try std.testing.expectEqual(Vec3{ .x = 1.0, .y = 2.0, .z = 3.0 }, v);
+    }
+
     /// Floors all components of the vector.
-    pub fn floor(self: *Vec3) Vec3 {
+    pub fn floor(self: *Vec3) void {
         self.* = self.floored();
+    }
+
+    test floor {
+        var v: Vec3 = .{ .x = 1.5, .y = 2.1, .z = 3.9 };
+        v.floor();
+        try std.testing.expectEqual(Vec3{ .x = 1.0, .y = 2.0, .z = 3.0 }, v);
     }
 
     /// Returns vector negated.
@@ -108,9 +173,21 @@ pub const Vec3 = extern struct {
         return self.scaled(-1);
     }
 
+    test negated {
+        var v: Vec3 = .{ .x = 1.5, .y = 2.1, .z = -3.1 };
+        v = v.negated();
+        try std.testing.expectEqual(Vec3{ .x = -1.5, .y = -2.1, .z = 3.1 }, v);
+    }
+
     /// Negates the vector.
     pub fn negate(self: *Vec3) void {
         self.* = self.negated();
+    }
+
+    test negate {
+        var v: Vec3 = .{ .x = 1.5, .y = 2.1, .z = -3.1 };
+        v.negate();
+        try std.testing.expectEqual(Vec3{ .x = -1.5, .y = -2.1, .z = 3.1 }, v);
     }
 
     /// Returns the squared magnitude.
@@ -118,9 +195,19 @@ pub const Vec3 = extern struct {
         return self.innerProd(self);
     }
 
+    test magSq {
+        var v: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        try std.testing.expectEqual(29, v.magSq());
+    }
+
     /// Returns the magnitude.
     pub fn mag(self: Vec3) f32 {
         return @sqrt(self.magSq());
+    }
+
+    test mag {
+        var v: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        try std.testing.expectEqual(@sqrt(29.0), v.mag());
     }
 
     /// Returns the squared distance between two vectors.
@@ -128,25 +215,78 @@ pub const Vec3 = extern struct {
         return self.minus(other).magSq();
     }
 
+    test distSq {
+        const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        const b: Vec3 = .{ .x = 3, .y = 5, .z = 7 };
+        try std.testing.expectEqual(14.0, a.distSq(b));
+    }
+
     /// Returns the distance between two vectors.
     pub fn dist(self: Vec3, other: Vec3) f32 {
         return @sqrt(self.distSq(other));
     }
 
-    /// Returns the vector normalized. If the vector is `.zero`, returns it unchanged.
+    test dist {
+        const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        const b: Vec3 = .{ .x = 3, .y = 5, .z = 7 };
+        try std.testing.expectEqual(@sqrt(14.0), a.dist(b));
+    }
+
+    /// Returns the vector renormalized. Assumes the input is already near normal.
+    pub fn renormalized(self: Vec3) Vec3 {
+        const len = self.mag();
+        if (len == 0) return self;
+        return self.scaled(1.0 / len);
+    }
+
+    test renormalized {
+        var v: Vec3 = .{ .x = 1.05, .y = 0.0, .z = 0.0 };
+        v = v.renormalized();
+        try std.testing.expectApproxEqAbs(v.x, 1.0, 0.01);
+        try std.testing.expectEqual(v.y, 0.0);
+        try std.testing.expectEqual(v.z, 0.0);
+    }
+
+    /// Renormalizes the vector. See `renormalized`.
+    pub fn renormalize(self: *Vec3) void {
+        self.* = self.normalized();
+    }
+
+    test renormalize {
+        var v: Vec3 = .{ .x = 1.05, .y = 0.0, .z = 0.0 };
+        v.renormalize();
+        try std.testing.expectApproxEqAbs(v.x, 1.0, 0.01);
+        try std.testing.expectEqual(v.y, 0.0);
+        try std.testing.expectEqual(v.z, 0.0);
+    }
+
+    /// Returns the vector normalized. If the vector is `.zero`, returns it unchanged. If your
+    /// input is nearly normal already, consider using `renormalize` instead.
     pub fn normalized(self: Vec3) Vec3 {
         const len = self.mag();
         if (len == 0) return self;
         return self.scaled(1.0 / len);
     }
 
-    test "normalized zero" {
-        try std.testing.expectEqual(Vec3.zero, Vec3.zero.normalized());
+    test normalized {
+        var v: Vec3 = .{ .x = 10.0, .y = 0.0, .z = 0.0 };
+        v = v.normalized();
+        try std.testing.expectEqual(Vec3{ .x = 1.0, .y = 0.0, .z = 0.0 }, v);
+        try std.testing.expectEqual(Vec3.zero, Vec3.normalized(.zero));
     }
 
     /// Normalizes the vector. See `normalized`.
-    pub fn normalize(self: *Vec3) Vec3 {
+    pub fn normalize(self: *Vec3) void {
         self.* = self.normalized();
+    }
+
+    test normalize {
+        var v: Vec3 = .{ .x = 10.0, .y = 0.0, .z = 0.0 };
+        v.normalize();
+        try std.testing.expectEqual(Vec3{ .x = 1.0, .y = 0.0, .z = 0.0 }, v);
+        v = .zero;
+        v.normalize();
+        try std.testing.expectEqual(Vec3.zero, v);
     }
 
     /// Returns the component wise product of two vectors.
@@ -158,6 +298,12 @@ pub const Vec3 = extern struct {
         };
     }
 
+    test compProd {
+        const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
+        try std.testing.expectEqual(Vec3{ .x = 8, .y = 15, .z = 24 }, a.compProd(b));
+    }
+
     /// Returns the inner product of two vectors. Equivalent to the dot product.
     pub fn innerProd(self: Vec3, other: Vec3) f32 {
         const yz = @mulAdd(f32, self.y, other.y, self.z * other.z);
@@ -165,8 +311,19 @@ pub const Vec3 = extern struct {
         return xyz;
     }
 
+    test innerProd {
+        const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
+        try std.testing.expectEqual(47, a.innerProd(b));
+    }
+
     /// Returns the x and y components.
     pub fn xy(self: Vec3) Vec2 {
         return .{ .x = self.x, .y = self.y };
+    }
+
+    test xy {
+        const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        try std.testing.expectEqual(Vec2{ .x = 2, .y = 3 }, a.xy());
     }
 };
