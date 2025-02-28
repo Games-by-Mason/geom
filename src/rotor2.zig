@@ -363,7 +363,7 @@ pub const Rotor2 = extern struct {
 
     /// Returns the rotor multiplied by other. This lets you compose rotations. Order matters.
     pub fn times(self: Rotor2, other: Rotor2) Rotor2 {
-        var result: Rotor2 = .{
+        const result: Rotor2 = .{
             .a = @mulAdd(f32, -self.xy, other.xy, self.a * other.a),
             .xy = @mulAdd(f32, self.xy, other.a, self.a * other.xy),
         };
