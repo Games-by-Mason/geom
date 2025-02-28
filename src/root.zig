@@ -32,6 +32,9 @@ pub fn invSqrt(f: anytype) @TypeOf(f) {
     // Now that we've ruled out values that would cause issues in optimized float mode, enable it
     // and calculate the inverse square root. This generates a hardware instruction approximating
     // the inverse square root on platforms that have one, and is therefore significantly faster.
+    //
+    // Note that this may also generate a refine step that we may or may not need, to avoid this
+    // we'd need to give up portability by implementing this per architecture.
     {
         @setFloatMode(.optimized);
         return 1.0 / @sqrt(f);
