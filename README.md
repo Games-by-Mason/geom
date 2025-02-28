@@ -6,9 +6,9 @@ Geometry for game development.
 
 I'm going to be fleshing this out into a more cohesive library as I require more functionality.
 
-Currently, it's still missing basic functionality--many 3D types, project matrices, etc.
+Currently, it's still missing basic functionality--many 3D types, projection matrices, etc.
 
-# What does it mean to be "for game development"?
+# "For Game Development"?
 
 This library has features you wouldn't expect out of a linear algebra library, and lacks features you would.
 
