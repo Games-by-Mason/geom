@@ -12,11 +12,19 @@ pub const Mat2x3 = @import("mat2x3.zig").Mat2x3;
 pub const tween = @import("tween");
 
 /// Very fast approximate inverse square root that only produces usable results when `f` is near 1.
+///
+/// Will eventually converge for values in the range `(0, 0.5 * (sqrt(17) - 1))`, or
+/// `(0, ~1.5615528128088303)`.
+///
+/// Explanation: https://gamesbymason.com/devlog/2025/#Fast-Quaternion-Normalization
+/// Proof: https://gamesbymason.com/devlog/2025/#Fast-Quaternion-Normalization-Proof
 pub fn invSqrtNearOne(f: anytype) @TypeOf(f) {
     return @mulAdd(@TypeOf(f), f, -0.5, 1.5);
 }
 
 /// Fast approximate inverse square root using a dedicated hardware instruction when available.
+///
+/// Explanation: https://gamesbymason.com/devlog/2025/#Fast-Quaternion-Normalization
 pub fn invSqrt(f: anytype) @TypeOf(f) {
     // If we're positive infinity, just return infinity
     if (std.math.isPositiveInf(f)) return f;
