@@ -1,11 +1,12 @@
 .{
-    .name = "geom",
+    .name = .geom,
+    .fingerprint = 0x18cf73e0df9a5953,
     .version = "0.0.0",
     .minimum_zig_version = "0.14.0-dev.3268+0cf6ae290",
     .dependencies = .{
         .tween = .{
-            .url = "https://github.com/Games-by-Mason/Tween/archive/c616dea8fcdbf17ad91dacf2aa9331d48f94c297.zip",
-            .hash = "12207075d3c2d3e6226ad56aeed53a5272adc1c4ccca45cbec32472229d4f56a70e7",
+            .url = "https://github.com/Games-by-Mason/Tween/archive/8b60a7ded70e4d9bcb5eedba42ae4e15ffd76632.zip",
+            .hash = "tween-0.0.0-xnWBlEaHAADJdmkwqwrKXf-oa1OtAA7RXF1D1LuwJ0zE",
         },
     },
     .paths = .{
