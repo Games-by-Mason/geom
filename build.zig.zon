@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.14.0-dev.3268+0cf6ae290",
     .dependencies = .{
         .tween = .{
-            .url = "https://github.com/Games-by-Mason/Tween/archive/8b60a7ded70e4d9bcb5eedba42ae4e15ffd76632.zip",
-            .hash = "tween-0.0.0-xnWBlEaHAADJdmkwqwrKXf-oa1OtAA7RXF1D1LuwJ0zE",
+            .url = "https://github.com/Games-by-Mason/Tween/archive/5df8c6cea4cd0ee99bed41107a7d904f35b4311e.zip",
+            .hash = "tween-0.0.0-xnWBlE6tAAAKj2GNaWr8mMLHxaKLTgPfYJ7WgSHNn2IJ",
         },
     },
     .paths = .{
