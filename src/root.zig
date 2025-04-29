@@ -49,22 +49,6 @@ pub fn invSqrt(f: anytype) @TypeOf(f) {
     }
 }
 
-// Check for important features on common targets. If these aren't enabled, it's almost certainly a
-// configuration mistake. We don't want to end up generating worse code or emulating FMA in software
-// by mistake.
-comptime {
-    const assert = std.debug.assert;
-    const cpu = builtin.cpu;
-
-    if (cpu.arch.isX86()) {
-        assert(std.Target.x86.featureSetHasAll(cpu.features, .{ .fma, .sse3 }));
-    } else if (cpu.arch.isArm()) {
-        assert(std.Target.arm.featureSetHasAny(cpu.features, .{ .neon, .vfp4 }));
-    } else if (cpu.arch.isAARCH64()) {
-        assert(std.Target.aarch64.featureSetHas(cpu.features, .neon));
-    }
-}
-
 test {
     std.testing.refAllDecls(@This());
 }
