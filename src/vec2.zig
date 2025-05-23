@@ -23,6 +23,15 @@ pub const Vec2 = extern struct {
     /// The negative y axis.
     pub const y_neg: Vec2 = .{ .x = 0, .y = -1 };
 
+    pub fn splat(f: f32) @This() {
+        return .{ .x = f, .y = f };
+    }
+
+    test splat {
+        try std.testing.expect(Vec2.splat(1.0).eql(.{ .x = 1.0, .y = 1.0 }));
+        try std.testing.expect(Vec2.splat(3.0).eql(.{ .x = 3.0, .y = 3.0 }));
+    }
+
     /// Checks for equality.
     pub fn eql(self: Vec2, other: Vec2) bool {
         return std.meta.eql(self, other);

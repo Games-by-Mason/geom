@@ -28,6 +28,15 @@ pub const Vec3 = extern struct {
     /// The negative z axis.
     pub const z_neg: Vec3 = .{ .x = 0, .y = 0, .z = -1.0 };
 
+    pub fn splat(f: f32) @This() {
+        return .{ .x = f, .y = f, .z = f };
+    }
+
+    test splat {
+        try std.testing.expect(Vec3.splat(1.0).eql(.{ .x = 1.0, .y = 1.0, .z = 1.0 }));
+        try std.testing.expect(Vec3.splat(3.0).eql(.{ .x = 3.0, .y = 3.0, .z = 3.0 }));
+    }
+
     /// Checks for equality.
     pub fn eql(self: Vec3, other: Vec3) bool {
         return std.meta.eql(self, other);

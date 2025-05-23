@@ -4,6 +4,7 @@ const geom = @import("root.zig");
 const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Rotor2 = geom.Rotor2;
+const Frustum2 = geom.Frustum2;
 
 /// A row major affine transformation matrix for working in two dimensions.
 pub const Mat2x3 = extern struct {
@@ -34,6 +35,22 @@ pub const Mat2x3 = extern struct {
     test eql {
         try std.testing.expect(Mat2x3.identity.eql(Mat2x3.identity));
         try std.testing.expect(!Mat2x3.identity.eql(Mat2x3.translation(.y_pos)));
+    }
+
+    /// Returns an orthographic projection matrix following the Vulkan/DX12 clip space convention.
+    ///
+    /// Under this convention, (0, 0) is top left and (1, 1) is bottom right.
+    pub fn ortho(frustum: Frustum2) @This() {
+        const width = frustum.right - frustum.left;
+        const height = frustum.bottom - frustum.top;
+        const x_scale = 2 / width;
+        const y_scale = 2 / height;
+        const x_off = -(frustum.right + frustum.left) / width;
+        const y_off = -(frustum.top + frustum.bottom) / height;
+        return .{
+            .r0 = .{ .x = x_scale, .y = 0, .z = x_off },
+            .r1 = .{ .x = 0, .y = y_scale, .z = y_off },
+        };
     }
 
     /// Create a rotation matrix from a rotor.
@@ -92,6 +109,10 @@ pub const Mat2x3 = extern struct {
         );
     }
 
+    pub fn rotated(self: @This(), rotor: Rotor2) @This() {
+        return @This().rotation(rotor).times(self);
+    }
+
     /// Create a translation matrix from a vector.
     pub fn translation(delta: Vec2) @This() {
         return .{
@@ -124,6 +145,10 @@ pub const Mat2x3 = extern struct {
         try std.testing.expectEqual(0, Mat2x3.translation(.{ .x = -1, .y = 3 }).getRotation());
     }
 
+    pub fn translated(self: @This(), delta: Vec2) @This() {
+        return @This().translation(delta).times(self);
+    }
+
     /// Create a scale matrix from a vector.
     pub fn scale(amount: Vec2) @This() {
         return .{
@@ -150,6 +175,19 @@ pub const Mat2x3 = extern struct {
         );
         try std.testing.expectEqual(0.0, Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).getRotation());
         try std.testing.expectEqual(Vec2.zero, Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).getTranslation());
+    }
+
+    pub fn scaled(self: @This(), delta: Vec2) @This() {
+        return @This().scale(delta).times(self);
+    }
+
+    test "rotatedTranslatedScaled" {
+        var m = Mat2x3.identity;
+        m = m.translated(.y_pos);
+        m = m.rotated(.fromAngle(std.math.pi));
+        m = m.scaled(.splat(0.5));
+        m = m.translated(.{ .x = 0.0, .y = 0.5 });
+        try expectVec2ApproxEql(Vec2{ .x = 0.0, .y = 0.0 }, m.timesPoint(.zero));
     }
 
     /// Returns `lhs` multiplied by `rhs`.
