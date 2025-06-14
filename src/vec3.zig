@@ -315,9 +315,9 @@ pub const Vec3 = extern struct {
 
     /// Returns the inner product of two vectors. Equivalent to the dot product.
     pub fn innerProd(self: Vec3, other: Vec3) f32 {
-        const yz = @mulAdd(f32, self.y, other.y, self.z * other.z);
-        const xyz = @mulAdd(f32, self.x, other.x, yz);
-        return xyz;
+        const pxy = @mulAdd(f32, self.x, other.x, self.y * other.y);
+        const pxyz = @mulAdd(f32, self.z, other.z, pxy);
+        return pxyz;
     }
 
     test innerProd {

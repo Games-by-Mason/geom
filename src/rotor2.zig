@@ -6,7 +6,6 @@ const math = std.math;
 
 const Vec2 = geom.Vec2;
 const Bivec2 = geom.Bivec2;
-const Mat2x3 = geom.Mat2x3;
 
 const lerp = tween.interp.lerp;
 
