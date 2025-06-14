@@ -1,6 +1,6 @@
 # Geom
 
-Geometry for game development.
+Geometry and related math for game development.
 
 # Status
 
