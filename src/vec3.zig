@@ -204,6 +204,33 @@ pub const Vec3 = extern struct {
         );
     }
 
+    /// Assigns each component to `std.math.sign` of itself.
+    pub fn sign(self: *Vec3) void {
+        self.* = self.signOf();
+    }
+
+    test sign {
+        var a: Vec3 = .{ .x = -10, .y = 0, .z = 20 };
+        a.sign();
+        try std.testing.expectEqual(Vec3{ .x = -1, .y = 0, .z = 1 }, a);
+    }
+
+    /// Returns `std.math.sign` of each component.
+    pub fn signOf(self: Vec3) Vec3 {
+        return .{
+            .x = std.math.sign(self.x),
+            .y = std.math.sign(self.y),
+            .z = std.math.sign(self.z),
+        };
+    }
+
+    test signOf {
+        try std.testing.expectEqual(
+            Vec3{ .x = 1, .y = -1, .z = 0 },
+            (Vec3{ .x = 10, .y = -20, .z = 0 }).signOf(),
+        );
+    }
+
     /// Returns vector negated.
     pub fn negated(self: Vec3) Vec3 {
         return self.scaled(-1);

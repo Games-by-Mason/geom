@@ -188,11 +188,6 @@ pub const Vec4 = extern struct {
         try std.testing.expectEqual(Vec4{ .x = 1.0, .y = 2.0, .z = 3.0, .w = 4.0 }, v);
     }
 
-    /// Returns vector negated.
-    pub fn negated(self: Vec4) Vec4 {
-        return self.scaled(-1);
-    }
-
     // Takes the modulo of all components of `self` with `base`.
     pub fn mod(self: *Vec4, base: Vec4) void {
         self.* = self.modded(base);
@@ -221,6 +216,39 @@ pub const Vec4 = extern struct {
                 .{ .x = 10, .y = 13, .z = 10, .w = 16 },
             ),
         );
+    }
+
+    /// Assigns each component to `std.math.sign` of itself.
+    pub fn sign(self: *Vec4) void {
+        self.* = self.signOf();
+    }
+
+    test sign {
+        var a: Vec4 = .{ .x = -10, .y = 0, .z = 20, .w = 15 };
+        a.sign();
+        try std.testing.expectEqual(Vec4{ .x = -1, .y = 0, .z = 1, .w = 1 }, a);
+    }
+
+    /// Returns `std.math.sign` of each component.
+    pub fn signOf(self: Vec4) Vec4 {
+        return .{
+            .x = std.math.sign(self.x),
+            .y = std.math.sign(self.y),
+            .z = std.math.sign(self.z),
+            .w = std.math.sign(self.w),
+        };
+    }
+
+    test signOf {
+        try std.testing.expectEqual(
+            Vec4{ .x = 1, .y = -1, .z = 0, .w = -1 },
+            (Vec4{ .x = 10, .y = -20, .z = 0, .w = -2 }).signOf(),
+        );
+    }
+
+    /// Returns vector negated.
+    pub fn negated(self: Vec4) Vec4 {
+        return self.scaled(-1);
     }
 
     test negated {

@@ -212,6 +212,29 @@ pub const Vec2 = extern struct {
         );
     }
 
+    /// Assigns each component to `std.math.sign` of itself.
+    pub fn sign(self: *Vec2) void {
+        self.* = self.signOf();
+    }
+
+    test sign {
+        var a: Vec2 = .{ .x = -10, .y = 0 };
+        a.sign();
+        try std.testing.expectEqual(Vec2{ .x = -1, .y = 0 }, a);
+    }
+
+    /// Returns `std.math.sign` of each component.
+    pub fn signOf(self: Vec2) Vec2 {
+        return .{
+            .x = std.math.sign(self.x),
+            .y = std.math.sign(self.y),
+        };
+    }
+
+    test signOf {
+        try std.testing.expectEqual(Vec2{ .x = 1, .y = -1 }, (Vec2{ .x = 10, .y = -20 }).signOf());
+    }
+
     /// Returns vector negated.
     pub fn negated(self: Vec2) Vec2 {
         return self.scaled(-1);
