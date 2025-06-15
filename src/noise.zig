@@ -18,6 +18,7 @@ const hash4D = geom.hash.default4D;
 const lerp = tween.interp.lerp;
 const smootherstep = tween.ease.smootherstep;
 const f32_max_consec = geom.constants.f32_max_consec;
+const u32_max_recip = geom.constants.u32_max_recip;
 
 const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
@@ -674,4 +675,259 @@ fn perlinDotGrad4(cell: Vec4, p: Vec4) f32 {
         30 => p.x + p.y + 0 + p.w,
         31 => p.x + p.y + p.z + 0,
     };
+}
+
+fn VoronoiImpl(T: type, features: u4) type {
+    return switch (features) {
+        1 => return struct {
+            point: T,
+            id: u32,
+            dist2: f32,
+        },
+        2 => return struct {
+            point: [2]T,
+            id: [2]u32,
+            dist2: [2]f32,
+        },
+        else => comptime unreachable,
+    };
+}
+
+pub fn Voronoi(T: type) type {
+    return VoronoiImpl(T, 1);
+}
+
+pub fn VoronoiF1F2(T: type) type {
+    return VoronoiImpl(T, 2);
+}
+
+fn voronoiImpl(
+    p: anytype,
+    period: @TypeOf(p),
+    comptime features: u4,
+) VoronoiImpl(@TypeOf(p), features) {
+    var result_point: [features]@TypeOf(p) = undefined;
+    var result_id: [features]u32 = undefined;
+    var result_dist2: [features]f32 = @splat(std.math.inf(f32));
+    switch (@TypeOf(p)) {
+        f32 => {
+            const cell = @floor(p);
+            const t = p - cell;
+            for ([3]f32{ -1.0, 0.0, 1.0 }) |offset| {
+                const hashed = hash(@intFromFloat(@mod(cell + offset, period)));
+                const id = hashed;
+                const point = @as(f32, @floatFromInt(hashed)) * u32_max_recip + offset;
+                const dist2 = @abs(point - t);
+                for (0..features) |i| {
+                    if (dist2 < result_dist2[i]) {
+                        if (features > 1 and i == 0) {
+                            result_dist2[i + 1] = result_dist2[i];
+                            result_point[i + 1] = result_point[i];
+                            result_id[i + 1] = result_id[i];
+                        }
+                        result_dist2[i] = dist2;
+                        result_point[i] = cell + point;
+                        result_id[i] = id;
+                        break;
+                    }
+                }
+            }
+        },
+        Vec2 => {
+            const cell = p.floored();
+            const t = p.minus(cell);
+            for ([3]f32{ -1.0, 0.0, 1.0 }) |x| {
+                for ([3]f32{ -1.0, 0.0, 1.0 }) |y| {
+                    const offset: Vec2 = .{ .x = x, .y = y };
+                    const seed = cell.plus(offset).modded(period);
+                    const hashed = hash2D(@Vector(2, u32){
+                        @intFromFloat(seed.x),
+                        @intFromFloat(seed.y),
+                    });
+                    const id = hashed[0];
+                    const point = (Vec2{
+                        .x = @floatFromInt(hashed[0]),
+                        .y = @floatFromInt(hashed[1]),
+                    }).scaled(u32_max_recip).plus(offset);
+                    const dist2 = point.minus(t).magSq();
+                    for (0..features) |i| {
+                        if (dist2 < result_dist2[i]) {
+                            if (features > 1 and i == 0) {
+                                result_dist2[i + 1] = result_dist2[i];
+                                result_point[i + 1] = result_point[i];
+                                result_id[i + 1] = result_id[i];
+                            }
+                            result_dist2[i] = dist2;
+                            result_point[i] = cell.plus(point);
+                            result_id[i] = id;
+                            break;
+                        }
+                    }
+                }
+            }
+        },
+        Vec3 => {
+            const cell = p.floored();
+            const t = p.minus(cell);
+            for ([3]f32{ -1.0, 0.0, 1.0 }) |x| {
+                for ([3]f32{ -1.0, 0.0, 1.0 }) |y| {
+                    for ([3]f32{ -1.0, 0.0, 1.0 }) |z| {
+                        const offset: Vec3 = .{ .x = x, .y = y, .z = z };
+                        const seed = cell.plus(offset).modded(period);
+                        const hashed = hash3D(@Vector(3, u32){
+                            @intFromFloat(seed.x),
+                            @intFromFloat(seed.y),
+                            @intFromFloat(seed.z),
+                        });
+                        const id = hashed[0];
+                        const point = (Vec3{
+                            .x = @floatFromInt(hashed[0]),
+                            .y = @floatFromInt(hashed[1]),
+                            .z = @floatFromInt(hashed[2]),
+                        }).scaled(u32_max_recip).plus(offset);
+                        const dist2 = point.minus(t).magSq();
+                        for (0..features) |i| {
+                            if (dist2 < result_dist2[i]) {
+                                if (features > 1 and i == 0) {
+                                    result_dist2[i + 1] = result_dist2[i];
+                                    result_point[i + 1] = result_point[i];
+                                    result_id[i + 1] = result_id[i];
+                                }
+                                result_dist2[i] = dist2;
+                                result_point[i] = cell.plus(point);
+                                result_id[i] = id;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        Vec4 => {
+            const cell = p.floored();
+            const t = p.minus(cell);
+            for ([3]f32{ -1.0, 0.0, 1.0 }) |x| {
+                for ([3]f32{ -1.0, 0.0, 1.0 }) |y| {
+                    for ([3]f32{ -1.0, 0.0, 1.0 }) |z| {
+                        for ([3]f32{ -1.0, 0.0, 1.0 }) |w| {
+                            const offset: Vec4 = .{ .x = x, .y = y, .z = z, .w = w };
+                            const seed = cell.plus(offset).modded(period);
+                            const hashed = hash4D(@Vector(4, u32){
+                                @intFromFloat(seed.x),
+                                @intFromFloat(seed.y),
+                                @intFromFloat(seed.z),
+                                @intFromFloat(seed.w),
+                            });
+                            const id = hashed[0];
+                            const point = (Vec4{
+                                .x = @floatFromInt(hashed[0]),
+                                .y = @floatFromInt(hashed[1]),
+                                .z = @floatFromInt(hashed[2]),
+                                .w = @floatFromInt(hashed[3]),
+                            }).scaled(u32_max_recip).plus(offset);
+                            const dist2 = point.minus(t).magSq();
+                            for (0..features) |i| {
+                                if (dist2 < result_dist2[i]) {
+                                    if (features > 1 and i == 0) {
+                                        result_dist2[i + 1] = result_dist2[i];
+                                        result_point[i + 1] = result_point[i];
+                                        result_id[i + 1] = result_id[i];
+                                    }
+                                    result_dist2[i] = dist2;
+                                    result_point[i] = cell.plus(point);
+                                    result_id[i] = id;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        else => comptime unreachable,
+    }
+    return switch (features) {
+        1 => .{
+            .point = result_point[0],
+            .id = result_id[0],
+            .dist2 = result_dist2[0],
+        },
+        2 => .{
+            .point = result_point,
+            .id = result_id,
+            .dist2 = result_dist2,
+        },
+        else => comptime unreachable,
+    };
+}
+
+pub fn voronoiPeriodic(p: anytype, period: @TypeOf(p)) Voronoi(@TypeOf(p)) {
+    return voronoiImpl(p, period, 1);
+}
+
+pub fn voronoi(p: anytype) Voronoi(@TypeOf(p)) {
+    const period: @TypeOf(p) = switch (@TypeOf(p)) {
+        f32 => f32_max_consec,
+        else => .splat(f32_max_consec),
+    };
+    return voronoiImpl(p, period, 1);
+}
+
+pub fn voronoiPeriodicF1F2(p: anytype, period: @TypeOf(p)) VoronoiF1F2(@TypeOf(p)) {
+    return voronoiImpl(p, period, 2);
+}
+
+pub fn voronoiF1F2(p: anytype) VoronoiF1F2(@TypeOf(p)) {
+    const period: @TypeOf(p) = switch (@TypeOf(p)) {
+        f32 => f32_max_consec,
+        else => .splat(f32_max_consec),
+    };
+    return voronoiImpl(p, period, 2);
+}
+
+test voronoi {
+    // Make sure it compiles for each type. These results also were visually verified to match the
+    // results from the GLSL code at the time of writing.
+    try std.testing.expectEqual(3.0199997e-2, voronoi(@as(f32, 0.0)).dist2);
+    try std.testing.expectEqual(9.893582e-3, voronoi(Vec2{ .x = 0.0, .y = 0.0 }).dist2);
+    try std.testing.expectEqual(4.204531e-1, voronoi(Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 }).dist2);
+    try std.testing.expectEqual(3.6259472e-1, voronoi(Vec4{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 0.0 }).dist2);
+}
+
+test voronoiF1F2 {
+    // Make sure it compiles for each type. These results also were visually verified to match the
+    // results from the GLSL code at the time of writing.
+    try std.testing.expectEqual(
+        voronoi(@as(f32, 0.0)).dist2,
+        voronoiF1F2(@as(f32, 0.0)).dist2[0],
+    );
+    try std.testing.expectEqual(
+        voronoi(Vec2{ .x = 0.0, .y = 0.0 }).dist2,
+        voronoiF1F2(Vec2{ .x = 0.0, .y = 0.0 }).dist2[0],
+    );
+    try std.testing.expectEqual(
+        voronoi(Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 }).dist2,
+        voronoiF1F2(Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 }).dist2[0],
+    );
+    try std.testing.expectEqual(
+        voronoi(Vec4{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 0.0 }).dist2,
+        voronoiF1F2(Vec4{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 0.0 }).dist2[0],
+    );
+
+    try std.testing.expectEqual(
+        8.3925533e-1,
+        voronoiF1F2(@as(f32, 0.0)).dist2[1],
+    );
+    try std.testing.expectEqual(
+        1.0877938e-1,
+        voronoiF1F2(Vec2{ .x = 0.0, .y = 0.0 }).dist2[1],
+    );
+    try std.testing.expectEqual(
+        7.610585e-1,
+        voronoiF1F2(Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 }).dist2[1],
+    );
+    try std.testing.expectEqual(
+        4.246807e-1,
+        voronoiF1F2(Vec4{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 0.0 }).dist2[1],
+    );
 }
