@@ -992,3 +992,62 @@ test valueFbm {
         .hurst = 0.5,
     }));
 }
+
+pub fn perlinFbm(p: anytype, options: FbmOptions(@TypeOf(p))) f32 {
+    const gain = std.math.exp2(-options.hurst);
+    var scale: f32 = 1.0;
+    var amplitude: f32 = 1.0;
+    var result: f32 = 0.0;
+    for (0..options.octaves) |_| {
+        var octave = perlinPeriodic(switch (@TypeOf(p)) {
+            f32 => p * scale,
+            else => p.scaled(scale),
+        }, options.period);
+        if (options.turbulence) octave = @abs(octave);
+        result += amplitude * octave;
+        scale *= 2.0;
+        amplitude *= gain;
+    }
+    return result;
+}
+
+test perlinFbm {
+    // Make sure it compiles for each type. These results also were visually verified to match the
+    // results from the GLSL code at the time of writing.
+    try std.testing.expectEqual(
+        -3.1448156e-1,
+        perlinFbm(@as(f32, 0.5), .{
+            .period = 4.0,
+            .turbulence = false,
+            .octaves = 5,
+            .hurst = 0.5,
+        }),
+    );
+    try std.testing.expectEqual(
+        5e-1,
+        perlinFbm(Vec2{ .x = 0.5, .y = 0.5 }, .{
+            .period = .splat(4.0),
+            .turbulence = false,
+            .octaves = 5,
+            .hurst = 0.5,
+        }),
+    );
+    try std.testing.expectEqual(
+        -1.25e-1,
+        perlinFbm(Vec3{ .x = 0.5, .y = 0.5, .z = 0.5 }, .{
+            .period = .splat(4.0),
+            .turbulence = false,
+            .octaves = 5,
+            .hurst = 0.5,
+        }),
+    );
+    try std.testing.expectEqual(
+        0e0,
+        perlinFbm(Vec4{ .x = 0.5, .y = 0.5, .z = 0.5, .w = 0.5 }, .{
+            .period = .splat(4.0),
+            .turbulence = false,
+            .octaves = 5,
+            .hurst = 0.5,
+        }),
+    );
+}
