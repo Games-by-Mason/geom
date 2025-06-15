@@ -931,3 +931,64 @@ test voronoiF1F2 {
         voronoiF1F2(Vec4{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 0.0 }).dist2[1],
     );
 }
+
+pub fn FbmOptions(T: type) type {
+    return struct {
+        period: T = switch (T) {
+            f32 => f32_max_consec,
+            else => .splat(f32_max_consec),
+        },
+        turbulence: bool = false,
+        octaves: u4,
+        hurst: f32,
+    };
+}
+
+pub fn valueFbm(p: anytype, options: FbmOptions(@TypeOf(p))) f32 {
+    const gain = std.math.exp2(-options.hurst);
+    var scale: f32 = 1.0;
+    var amplitude: f32 = 1.0;
+    var result: f32 = 0.0;
+    var peak: f32 = 0.0;
+    for (0..options.octaves) |_| {
+        var octave = valuePeriodic(switch (@TypeOf(p)) {
+            f32 => p * scale,
+            else => p.scaled(scale),
+        }, options.period);
+        if (options.turbulence) octave = @abs(lerp(-1, 1, octave));
+        result += amplitude * octave;
+        peak += amplitude;
+        scale *= 2.0;
+        amplitude *= gain;
+    }
+    return result / peak;
+}
+
+test valueFbm {
+    // Make sure it compiles for each type. These results also were visually verified to match the
+    // results from the GLSL code at the time of writing.
+    try std.testing.expectEqual(3.0199995e-2, valueFbm(@as(f32, 0.0), .{
+        .period = 4.0,
+        .turbulence = false,
+        .octaves = 5,
+        .hurst = 0.5,
+    }));
+    try std.testing.expectEqual(9.7231954e-2, valueFbm(Vec2.zero, .{
+        .period = .splat(4.0),
+        .turbulence = false,
+        .octaves = 5,
+        .hurst = 0.5,
+    }));
+    try std.testing.expectEqual(6.081519e-1, valueFbm(Vec3.zero, .{
+        .period = .splat(4.0),
+        .turbulence = false,
+        .octaves = 5,
+        .hurst = 0.5,
+    }));
+    try std.testing.expectEqual(5.8639057e-2, valueFbm(Vec4.zero, .{
+        .period = .splat(4.0),
+        .turbulence = false,
+        .octaves = 5,
+        .hurst = 0.5,
+    }));
+}
