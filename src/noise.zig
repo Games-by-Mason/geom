@@ -1051,3 +1051,65 @@ test perlinFbm {
         }),
     );
 }
+
+pub fn voronoiFbm(p: anytype, options: FbmOptions(@TypeOf(p))) f32 {
+    const vmax: f32 = @sqrt(2.0); // Max Voronoi dist sample
+    const gain = std.math.exp2(-options.hurst);
+    var scale: f32 = 1.0;
+    var amplitude: f32 = 1.0;
+    var result: f32 = 0.0;
+    var peak: f32 = 0.0;
+    for (0..options.octaves) |_| {
+        var octave = @sqrt(voronoiPeriodic(switch (@TypeOf(p)) {
+            f32 => p * scale,
+            else => p.scaled(scale),
+        }, options.period).dist2);
+        if (options.turbulence) octave = @abs(lerp(-vmax, vmax, octave));
+        result += amplitude * octave;
+        peak += amplitude;
+        scale *= 2.0;
+        amplitude *= gain;
+    }
+    return result / peak;
+}
+
+test voronoiFbm {
+    // Make sure it compiles for each type. These results also were visually verified to match the
+    // results from the GLSL code at the time of writing.
+    try std.testing.expectEqual(
+        5.892936e-1,
+        voronoiFbm(@as(f32, 0.5), .{
+            .period = 4.0,
+            .turbulence = false,
+            .octaves = 5,
+            .hurst = 0.5,
+        }),
+    );
+    try std.testing.expectEqual(
+        5.0247246e-1,
+        voronoiFbm(Vec2{ .x = 0.5, .y = 0.5 }, .{
+            .period = .splat(4.0),
+            .turbulence = false,
+            .octaves = 5,
+            .hurst = 0.5,
+        }),
+    );
+    try std.testing.expectEqual(
+        5.524867e-1,
+        voronoiFbm(Vec3{ .x = 0.5, .y = 0.5, .z = 0.5 }, .{
+            .period = .splat(4.0),
+            .turbulence = false,
+            .octaves = 5,
+            .hurst = 0.5,
+        }),
+    );
+    try std.testing.expectEqual(
+        5.2795863e-1,
+        voronoiFbm(Vec4{ .x = 0.5, .y = 0.5, .z = 0.5, .w = 0.5 }, .{
+            .period = .splat(4.0),
+            .turbulence = false,
+            .octaves = 5,
+            .hurst = 0.5,
+        }),
+    );
+}
