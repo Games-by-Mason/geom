@@ -1,5 +1,5 @@
-//! Mirrors of the hash and and hash based rand functions provided by GBMS, see GBMS for
-//! documentation, origins, recommended usage, etc:
+//! Mirrors of the hash and hash based rand functions provided by GBMS, see GBMS for documentation,
+//! origins, recommended usage, etc:
 //!
 //! https://github.com/Games-by-Mason/gbms/
 //!
@@ -13,11 +13,9 @@ const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 
-// Multiplying by the reciprocal produces exact results for all f32s that represent whole numbers
-// that would fit in a u32.
-const u32_max_recip = 1.0 / @as(f32, @floatFromInt(std.math.maxInt(u32)));
+const u32_max_recip = geom.constants.u32_max_recip;
 
-fn pcg(s: u32) u32 {
+pub fn pcg(s: u32) u32 {
     const state: u32 = s *% 747796405 +% 2891336453;
     const word: u32 = ((state >> @intCast((state >> 28) +% 4)) ^ state) *% 277803737;
     return (word >> 22) ^ word;
@@ -34,7 +32,7 @@ test pcg {
     }
 }
 
-fn pcg2d(s: @Vector(2, u32)) @Vector(2, u32) {
+pub fn pcg2d(s: @Vector(2, u32)) @Vector(2, u32) {
     var r = s;
     r = r *% @as(@Vector(2, u32), @splat(1664525)) +% @as(@Vector(2, u32), @splat(1013904223));
     r[0] +%= r[1] *% 1664525;
@@ -60,7 +58,7 @@ test pcg2d {
     }
 }
 
-fn pcg3d(s: @Vector(3, u32)) @Vector(3, u32) {
+pub fn pcg3d(s: @Vector(3, u32)) @Vector(3, u32) {
     var r = s;
     r = r *% @as(@Vector(3, u32), @splat(1664525)) +% @as(@Vector(3, u32), @splat(1013904223));
     r[0] +%= r[1] *% r[2];
@@ -87,7 +85,7 @@ test pcg3d {
     }
 }
 
-fn pcg4d(s: @Vector(4, u32)) @Vector(4, u32) {
+pub fn pcg4d(s: @Vector(4, u32)) @Vector(4, u32) {
     var r = s;
     r = r *% @as(@Vector(4, u32), @splat(1664525)) +% @as(@Vector(4, u32), @splat(1013904223));
     r[0] +%= r[1] *% r[3];
@@ -116,7 +114,7 @@ test pcg4d {
     }
 }
 
-fn default(s: u32) u32 {
+pub fn default(s: u32) u32 {
     return pcg(s);
 }
 
@@ -125,7 +123,7 @@ test default {
     _ = default(0);
 }
 
-fn default2D(s: @Vector(2, u32)) @Vector(2, u32) {
+pub fn default2D(s: @Vector(2, u32)) @Vector(2, u32) {
     return pcg2d(s);
 }
 
@@ -134,7 +132,7 @@ test default2D {
     _ = default2D(.{ 0, 1 });
 }
 
-fn default3D(s: @Vector(3, u32)) @Vector(3, u32) {
+pub fn default3D(s: @Vector(3, u32)) @Vector(3, u32) {
     return pcg3d(s);
 }
 
@@ -143,7 +141,7 @@ test default3D {
     _ = default3D(.{ 0, 1, 2 });
 }
 
-fn default4D(s: @Vector(4, u32)) @Vector(4, u32) {
+pub fn default4D(s: @Vector(4, u32)) @Vector(4, u32) {
     return pcg4d(s);
 }
 
@@ -152,23 +150,23 @@ test default4D {
     _ = default4D(.{ 0, 1, 2, 3 });
 }
 
-fn rand(s: anytype) f32 {
+pub fn rand(s: anytype) f32 {
     switch (@TypeOf(s)) {
         u32 => {
             const all: f32 = @floatFromInt(default(s));
-            return all / std.math.maxInt(u32);
+            return all * u32_max_recip;
         },
         @Vector(2, u32) => {
             const all: @Vector(2, f32) = @floatFromInt(default2D(s));
-            return all[0] / std.math.maxInt(u32);
+            return all[0] * u32_max_recip;
         },
         @Vector(3, u32) => {
             const all: @Vector(3, f32) = @floatFromInt(default3D(s));
-            return all[0] / std.math.maxInt(u32);
+            return all[0] * u32_max_recip;
         },
         @Vector(4, u32) => {
             const all: @Vector(4, f32) = @floatFromInt(default4D(s));
-            return all[0] / std.math.maxInt(u32);
+            return all[0] * u32_max_recip;
         },
         f32 => return rand(@as(u32, @bitCast(s))),
         Vec2 => return rand(@Vector(2, u32){
@@ -202,7 +200,7 @@ test rand {
     try std.testing.expectEqual(9.8791474e-1, rand(Vec4{ .x = 1, .y = 2, .z = 3, .w = 4 }));
 }
 
-fn rand2(s: anytype) Vec2 {
+pub fn rand2(s: anytype) Vec2 {
     switch (@TypeOf(s)) {
         u32 => {
             const all = default2D(.{ s, 1 });
@@ -276,7 +274,7 @@ test rand2 {
     );
 }
 
-fn rand3(s: anytype) Vec3 {
+pub fn rand3(s: anytype) Vec3 {
     switch (@TypeOf(s)) {
         u32 => {
             const all = default3D(.{ s, 1, 1 });
@@ -366,7 +364,7 @@ test rand3 {
     );
 }
 
-fn rand4(s: anytype) Vec4 {
+pub fn rand4(s: anytype) Vec4 {
     switch (@TypeOf(s)) {
         u32 => {
             const all = default4D(.{ s, 1, 1, 1 });

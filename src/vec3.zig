@@ -177,6 +177,33 @@ pub const Vec3 = extern struct {
         try std.testing.expectEqual(Vec3{ .x = 1.0, .y = 2.0, .z = 3.0 }, v);
     }
 
+    // Takes the modulo of all components of `self` with `base`.
+    pub fn mod(self: *Vec3, base: Vec3) void {
+        self.* = self.modded(base);
+    }
+
+    test mod {
+        var a: Vec3 = .{ .x = 11, .y = 15, .z = 17 };
+        a.mod(.{ .x = 10, .y = 13, .z = 10 });
+        try std.testing.expectEqual(Vec3{ .x = 1, .y = 2, .z = 7 }, a);
+    }
+
+    /// Returns the modulo of all components of `self` with `base`.
+    pub fn modded(self: Vec3, base: Vec3) Vec3 {
+        return .{
+            .x = @mod(self.x, base.x),
+            .y = @mod(self.y, base.y),
+            .z = @mod(self.z, base.z),
+        };
+    }
+
+    test modded {
+        try std.testing.expectEqual(
+            Vec3{ .x = 1, .y = 2, .z = 7 },
+            (Vec3{ .x = 11, .y = 15, .z = 17 }).modded(.{ .x = 10, .y = 13, .z = 10 }),
+        );
+    }
+
     /// Returns vector negated.
     pub fn negated(self: Vec3) Vec3 {
         return self.scaled(-1);

@@ -11,7 +11,9 @@ pub const Rotor2 = @import("rotor2.zig").Rotor2;
 pub const Mat2x3 = @import("mat2x3.zig").Mat2x3;
 pub const Frustum2 = @import("frustum2.zig").Frustum2;
 
+pub const constants = @import("constants.zig");
 pub const hash = @import("hash.zig");
+pub const noise = @import("noise.zig");
 
 pub const tween = @import("tween");
 
