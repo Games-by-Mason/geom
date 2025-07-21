@@ -29,7 +29,7 @@ pub fn valuePeriodic(p: anytype, period: @TypeOf(p)) f32 {
         f32 => {
             // Get the t value
             const cell = @floor(p);
-            const t = p - cell;
+            const t = std.math.clamp(p - cell, 0, 1);
 
             // Get the sample coordinates
             const c0 = @mod(cell + 0.0, period);
@@ -318,7 +318,7 @@ pub fn perlinPeriodic(p: anytype, period: @TypeOf(p)) f32 {
         f32 => {
             // Get the cell and t value
             const cell = @floor(p);
-            const t = p - cell;
+            const t = std.math.clamp(p - cell, 0, 1);
 
             // Get the sample offsets
             const o0: f32 = 0;
@@ -712,7 +712,7 @@ fn voronoiImpl(
     switch (@TypeOf(p)) {
         f32 => {
             const cell = @floor(p);
-            const t = p - cell;
+            const t = std.math.clamp(p - cell, 0, 1);
             for ([3]f32{ -1.0, 0.0, 1.0 }) |offset| {
                 const hashed = hash(@intFromFloat(@mod(cell + offset, period)));
                 const id = hashed;
