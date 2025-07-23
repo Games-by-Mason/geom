@@ -32,9 +32,7 @@ pub fn build(b: *std.Build) void {
 
     const bench = b.addExecutable(.{
         .name = "bench",
-        .root_source_file = b.path("bench/main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = geom,
     });
     bench.root_module.addImport("geom", geom);
     const run_bench = b.addRunArtifact(bench);

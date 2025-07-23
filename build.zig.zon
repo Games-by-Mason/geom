@@ -2,7 +2,7 @@
     .name = .geom,
     .fingerprint = 0x18cf73e0df9a5953,
     .version = "0.0.0",
-    .minimum_zig_version = "0.14.0",
+    .minimum_zig_version = "0.15.0-dev.1218+bc8e1a74c",
     .dependencies = .{
         .tween = .{
             .url = "https://github.com/Games-by-Mason/Tween/archive/8e8e772eb2be9a0ccae78b0d7793e2a845524331.zip",
