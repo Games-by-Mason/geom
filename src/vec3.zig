@@ -367,6 +367,21 @@ pub const Vec3 = extern struct {
         try std.testing.expectEqual(Vec3{ .x = 8, .y = 15, .z = 24 }, a.compProd(b));
     }
 
+    /// Returns the component wise division of two vectors.
+    pub fn compDiv(self: Vec3, other: Vec3) Vec3 {
+        return .{
+            .x = self.x / other.x,
+            .y = self.y / other.y,
+            .z = self.z / other.z,
+        };
+    }
+
+    test compDiv {
+        const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
+        try std.testing.expectEqual(Vec3{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0 }, a.compDiv(b));
+    }
+
     /// Returns the inner product of two vectors. Equivalent to the dot product.
     pub fn innerProd(self: Vec3, other: Vec3) f32 {
         const pxy = @mulAdd(f32, self.x, other.x, self.y * other.y);
