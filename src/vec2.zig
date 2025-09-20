@@ -457,4 +457,59 @@ pub const Vec2 = extern struct {
         var v: Vec2 = .{ .x = 1, .y = 2 };
         try std.testing.expectEqual(Vec3{ .x = 1, .y = 2, .z = 0.0 }, v.dir());
     }
+
+    pub fn clamped(self: Vec2, min: Vec2, max: Vec2) @This() {
+        return .{
+            .x = std.math.clamp(self.x, min.x, max.x),
+            .y = std.math.clamp(self.y, min.y, max.y),
+        };
+    }
+
+    test clamped {
+        try std.testing.expectEqual(
+            Vec2{ .x = 10, .y = 4 },
+            (Vec2{ .x = 100, .y = 0 }).clamped(
+                .{ .x = 2, .y = 4 },
+                .{ .x = 10, .y = 20 },
+            ),
+        );
+
+        try std.testing.expectEqual(
+            Vec2{ .x = 2, .y = 20 },
+            (Vec2{ .x = 0, .y = 100 }).clamped(
+                .{ .x = 2, .y = 4 },
+                .{ .x = 10, .y = 20 },
+            ),
+        );
+
+        try std.testing.expectEqual(
+            Vec2{ .x = 3, .y = 10 },
+            (Vec2{ .x = 3, .y = 10 }).clamped(
+                .{ .x = 2, .y = 4 },
+                .{ .x = 10, .y = 20 },
+            ),
+        );
+    }
+
+    pub fn clamp(self: *Vec2, min: Vec2, max: Vec2) void {
+        self.* = self.clamped(min, max);
+    }
+
+    test clamp {
+        {
+            var v: Vec2 = .{ .x = 100, .y = 0 };
+            v.clamp(.{ .x = 2, .y = 4 }, .{ .x = 10, .y = 20 });
+            try std.testing.expectEqual(Vec2{ .x = 10, .y = 4 }, v);
+        }
+        {
+            var v: Vec2 = .{ .x = 0, .y = 100 };
+            v.clamp(.{ .x = 2, .y = 4 }, .{ .x = 10, .y = 20 });
+            try std.testing.expectEqual(Vec2{ .x = 2, .y = 20 }, v);
+        }
+        {
+            var v: Vec2 = .{ .x = 3, .y = 10 };
+            v.clamp(.{ .x = 2, .y = 4 }, .{ .x = 10, .y = 20 });
+            try std.testing.expectEqual(Vec2{ .x = 3, .y = 10 }, v);
+        }
+    }
 };

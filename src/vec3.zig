@@ -404,4 +404,60 @@ pub const Vec3 = extern struct {
         const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
         try std.testing.expectEqual(Vec2{ .x = 2, .y = 3 }, a.xy());
     }
+
+    pub fn clamped(self: Vec3, min: Vec3, max: Vec3) @This() {
+        return .{
+            .x = std.math.clamp(self.x, min.x, max.x),
+            .y = std.math.clamp(self.y, min.y, max.y),
+            .z = std.math.clamp(self.z, min.z, max.z),
+        };
+    }
+
+    test clamped {
+        try std.testing.expectEqual(
+            Vec3{ .x = 10, .y = 4, .z = 5 },
+            (Vec3{ .x = 100, .y = 0, .z = 5 }).clamped(
+                .{ .x = 2, .y = 4, .z = 0 },
+                .{ .x = 10, .y = 20, .z = 100 },
+            ),
+        );
+
+        try std.testing.expectEqual(
+            Vec3{ .x = 2, .y = 20, .z = 1 },
+            (Vec3{ .x = 0, .y = 100, .z = 0 }).clamped(
+                .{ .x = 2, .y = 4, .z = 1 },
+                .{ .x = 10, .y = 20, .z = 100 },
+            ),
+        );
+
+        try std.testing.expectEqual(
+            Vec3{ .x = 3, .y = 10, .z = 100 },
+            (Vec3{ .x = 3, .y = 10, .z = 200 }).clamped(
+                .{ .x = 2, .y = 4, .z = 0 },
+                .{ .x = 10, .y = 20, .z = 100 },
+            ),
+        );
+    }
+
+    pub fn clamp(self: *Vec3, min: Vec3, max: Vec3) void {
+        self.* = self.clamped(min, max);
+    }
+
+    test clamp {
+        {
+            var v: Vec3 = .{ .x = 100, .y = 0, .z = 5 };
+            v.clamp(.{ .x = 2, .y = 4, .z = 0 }, .{ .x = 10, .y = 20, .z = 100 });
+            try std.testing.expectEqual(Vec3{ .x = 10, .y = 4, .z = 5 }, v);
+        }
+        {
+            var v: Vec3 = .{ .x = 0, .y = 100, .z = 0 };
+            v.clamp(.{ .x = 2, .y = 4, .z = 1 }, .{ .x = 10, .y = 20, .z = 100 });
+            try std.testing.expectEqual(Vec3{ .x = 2, .y = 20, .z = 1 }, v);
+        }
+        {
+            var v: Vec3 = .{ .x = 3, .y = 10, .z = 200 };
+            v.clamp(.{ .x = 2, .y = 4, .z = 0 }, .{ .x = 10, .y = 20, .z = 100 });
+            try std.testing.expectEqual(Vec3{ .x = 3, .y = 10, .z = 100 }, v);
+        }
+    }
 };
