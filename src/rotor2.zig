@@ -13,6 +13,7 @@ const lerp = tween.interp.lerp;
 /// rotation. Unlike quaternions, rotors generalize to all dimensions. Rotors can represent up to
 /// two full rotations, at which point they wrap back around.
 pub const Rotor2 = extern struct {
+    // XXX: make yx so that not negative like rotor3?
     /// The component that rotates from x to y along the xy plane.
     ///
     /// Equivalent to the negative sine of half the rotation.
@@ -345,7 +346,7 @@ pub const Rotor2 = extern struct {
 
     /// Applies the rotor to a vector.
     pub fn timesVec2(self: Rotor2, point: Vec2) Vec2 {
-        // temp = -rotor * point
+        // temp = -rotor * point (results in trivector, stored as locals)
         const x = @mulAdd(f32, self.a, point.x, -self.xy * point.y);
         const y = @mulAdd(f32, self.a, point.y, self.xy * point.x);
 
@@ -360,6 +361,7 @@ pub const Rotor2 = extern struct {
         try std.testing.expectEqual(Vec2.x_pos, Rotor2.fromTo(.x_pos, .x_pos).timesVec2(.x_pos));
     }
 
+    // XXX: flip signs on alt comps?
     /// Returns the rotor multiplied by other. This lets you compose rotations. Order matters.
     pub fn times(self: Rotor2, other: Rotor2) Rotor2 {
         const result: Rotor2 = .{

@@ -4,8 +4,8 @@ const geom = @import("root.zig");
 const math = std.math;
 
 const Vec2 = geom.Vec2;
-const Bivec2 = geom.Bivec2;
-const Rotor2 = geom.Rotor2;
+const Bivec3 = geom.Bivec3;
+const Rotor3 = geom.Rotor3;
 
 /// A two dimensional vector.
 pub const Vec3 = extern struct {
@@ -393,6 +393,64 @@ pub const Vec3 = extern struct {
         const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
         const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
         try std.testing.expectEqual(47, a.innerProd(b));
+    }
+
+    // XXX: ...
+    /// Returns the outer product of two vectors. Generalized form of the cross product, result is
+    /// an oriented area.
+    pub fn outerProd(lhs: Vec3, rhs: Vec3) Bivec3 {
+        return .{
+            .yz = @mulAdd(f32, lhs.y, rhs.z, -lhs.z * rhs.y),
+            .xz = @mulAdd(f32, -lhs.z, rhs.x, lhs.x * rhs.z),
+            .yx = @mulAdd(f32, -lhs.x, rhs.y, lhs.y * rhs.x),
+        };
+    }
+
+    test outerProd {
+        {
+            const a: Vec3 = .x_pos;
+            const b: Vec3 = .y_pos;
+            try std.testing.expectEqual(Bivec3{ .yx = -1.0, .yz = 0.0, .xz = 0.0 }, a.outerProd(b));
+        }
+
+        {
+            const a: Vec3 = .{ .x = 1, .y = 2, .z = 3 };
+            const b: Vec3 = .{ .x = 1, .y = 5, .z = 7 };
+            try std.testing.expectEqual(Bivec3{ .yz = -1, .xz = 4, .yx = -3 }, a.outerProd(b));
+        }
+    }
+
+    /// Returns the geometric product of two vectors. This is an intermediate step in creating a
+    /// usable rotor, it's more likely that you want `Rotor3.fromTo`.
+    pub fn geomProd(lhs: Vec3, rhs: Vec3) Rotor3 {
+        const outer = lhs.outerProd(rhs);
+        return .{
+            .yz = outer.yz,
+            .xz = outer.xz,
+            .yx = outer.yx,
+            .a = lhs.innerProd(rhs) + 1.0,
+        };
+    }
+
+    test geomProd {
+        try std.testing.expectEqual(Rotor3{
+            .yz = 0.0,
+            .xz = 0.0,
+            .yx = -1.0,
+            .a = 1.0,
+        }, Vec3.x_pos.geomProd(.y_pos));
+        try std.testing.expectEqual(Rotor3{
+            .yz = 0.0,
+            .xz = 1.0,
+            .yx = 0.0,
+            .a = 1.0,
+        }, Vec3.x_pos.geomProd(.z_pos));
+        try std.testing.expectEqual(Rotor3{
+            .yz = 1.0,
+            .xz = 0.0,
+            .yx = 0.0,
+            .a = 1.0,
+        }, Vec3.y_pos.geomProd(.z_pos));
     }
 
     /// Returns the x and y components.

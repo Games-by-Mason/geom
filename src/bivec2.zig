@@ -1,6 +1,8 @@
 const std = @import("std");
 const geom = @import("root.zig");
 
+const math = std.math;
+
 const Rotor2 = geom.Rotor2;
 const Vec2 = geom.Vec2;
 
@@ -10,8 +12,9 @@ pub const Bivec2 = extern struct {
     /// the direction.
     xy: f32,
 
-    /// The zero bivector.
     pub const zero: Bivec2 = .{ .xy = 0.0 };
+    pub const xy_pos: Bivec2 = .{ .xy = 1.0 };
+    pub const xy_neg: Bivec2 = .{ .xy = -1.0 };
 
     /// Checks for equality.
     pub fn eql(self: Bivec2, other: Bivec2) bool {
@@ -20,7 +23,8 @@ pub const Bivec2 = extern struct {
 
     test eql {
         try std.testing.expect(Bivec2.zero.eql(Bivec2{ .xy = 0.0 }));
-        try std.testing.expect(!Bivec2.zero.eql(Bivec2{ .xy = 1.0 }));
+        try std.testing.expect(!Bivec2.zero.eql(.xy_pos));
+        try std.testing.expect(!Bivec2.zero.eql(.xy_neg));
     }
 
     /// Returns the bivector scaled by `factor`.
@@ -104,31 +108,27 @@ pub const Bivec2 = extern struct {
     }
 
     test exp {
-        const pi = std.math.pi / 2.0;
-        const xy: Bivec2 = Vec2.x_pos.outerProd(.y_pos);
-        const yx: Bivec2 = Vec2.y_pos.outerProd(.x_pos);
-
         // Test 0 degree rotations
-        try testExpVsAngle(xy, 0.0);
-        try testExpVsAngle(yx, 0.0);
+        try testExpVsAngle(xy_pos, 0.0);
+        try testExpVsAngle(xy_neg, 0.0);
 
         // Test 90 degree rotations
-        try testExpVsAngle(xy, pi / 2.0);
-        try testExpVsAngle(xy, -pi / 2.0);
-        try testExpVsAngle(yx, pi / 2.0);
-        try testExpVsAngle(yx, -pi / 2.0);
+        try testExpVsAngle(xy_pos, math.pi / 2.0);
+        try testExpVsAngle(xy_pos, -math.pi / 2.0);
+        try testExpVsAngle(xy_neg, math.pi / 2.0);
+        try testExpVsAngle(xy_neg, -math.pi / 2.0);
 
         // Test 180 degree rotations
-        try testExpVsAngle(xy, pi);
-        try testExpVsAngle(xy, -pi);
-        try testExpVsAngle(yx, pi);
-        try testExpVsAngle(yx, -pi);
+        try testExpVsAngle(xy_pos, math.pi);
+        try testExpVsAngle(xy_pos, -math.pi);
+        try testExpVsAngle(xy_neg, math.pi);
+        try testExpVsAngle(xy_neg, -math.pi);
 
         // Test 360 degree rotations
-        try testExpVsAngle(xy, 2.0 * pi);
-        try testExpVsAngle(xy, -2.0 * pi);
-        try testExpVsAngle(yx, 2.0 * pi);
-        try testExpVsAngle(yx, -2.0 * pi);
+        try testExpVsAngle(xy_pos, 2.0 * math.pi);
+        try testExpVsAngle(xy_pos, -2.0 * math.pi);
+        try testExpVsAngle(xy_neg, 2.0 * math.pi);
+        try testExpVsAngle(xy_neg, -2.0 * math.pi);
     }
 };
 
