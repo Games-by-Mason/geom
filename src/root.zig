@@ -11,7 +11,9 @@ pub const Bivec3 = @import("bivec3.zig").Bivec3;
 pub const Rotor2 = @import("rotor2.zig").Rotor2;
 pub const Rotor3 = @import("rotor3.zig").Rotor3;
 pub const Mat2x3 = @import("mat2x3.zig").Mat2x3;
+pub const Mat3x4 = @import("mat3x4.zig").Mat3x4;
 pub const Frustum2 = @import("frustum2.zig").Frustum2;
+pub const Frustum3 = @import("frustum3.zig").Frustum3;
 
 pub const constants = @import("constants.zig");
 pub const hash = @import("hash.zig");

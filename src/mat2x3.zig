@@ -37,9 +37,8 @@ pub const Mat2x3 = extern struct {
         try std.testing.expect(!Mat2x3.identity.eql(Mat2x3.translation(.y_pos)));
     }
 
-    /// Returns an orthographic projection matrix following the Vulkan/DX12 clip space convention.
-    ///
-    /// Under this convention, (0, 0) is top left and (1, 1) is bottom right.
+    /// Returns an orthographic projection matrix that converts from view space to Vulkan/DX12 clip
+    /// space.
     pub fn ortho(frustum: Frustum2) @This() {
         const width = frustum.right - frustum.left;
         const height = frustum.bottom - frustum.top;
@@ -51,6 +50,18 @@ pub const Mat2x3 = extern struct {
             .r0 = .{ .x = x_scale, .y = 0, .z = x_off },
             .r1 = .{ .x = 0, .y = y_scale, .z = y_off },
         };
+    }
+
+    test ortho {
+        const f: Frustum2 = .{
+            .left = -2,
+            .right = 0,
+            .top = 4,
+            .bottom = -2,
+        };
+        const m = ortho(f);
+        try expectVec2ApproxEql(.{ .x = 1.0, .y = 2.0 / 6.0 }, m.timesPoint(.zero));
+        try expectVec2ApproxEql(.{ .x = 2.0, .y = 1 }, m.timesPoint(.{ .x = 1, .y = -2 }));
     }
 
     /// Create a rotation matrix from a rotor.
@@ -75,42 +86,50 @@ pub const Mat2x3 = extern struct {
         try std.testing.expectApproxEqAbs(@cos(std.math.pi / 4.0), m.r1.y, 0.01);
 
         try expectVec2ApproxEql(
-            Vec2.y_pos,
+            .y_pos,
             Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.x_pos),
         );
         try expectVec2ApproxEql(
-            Vec2.x_neg,
+            .x_neg,
             Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.y_pos),
         );
         try expectVec2ApproxEql(
-            Vec2.x_pos,
+            .x_pos,
             Mat2x3.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.x_neg),
         );
         try expectVec2ApproxEql(
-            Vec2.y_neg,
+            .y_neg,
             Mat2x3.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.y_pos),
         );
 
         try expectVec2ApproxEql(
-            Vec2.y_pos,
+            .y_pos,
             Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.x_pos),
         );
         try expectVec2ApproxEql(
-            Vec2.x_neg,
+            .x_neg,
             Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.y_pos),
         );
         try expectVec2ApproxEql(
-            Vec2.x_pos,
+            .x_pos,
             Mat2x3.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.x_neg),
         );
         try expectVec2ApproxEql(
-            Vec2.y_neg,
+            .y_neg,
             Mat2x3.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.y_pos),
         );
     }
 
     pub fn rotated(self: @This(), rotor: Rotor2) @This() {
-        return @This().rotation(rotor).times(self);
+        return rotation(rotor).times(self);
+    }
+
+    test rotated {
+        const r: Rotor2 = .fromTo(.x_pos, .y_pos);
+        try std.testing.expectEqual(
+            rotation(r).times(.identity),
+            identity.rotated(r),
+        );
     }
 
     /// Create a translation matrix from a vector.
@@ -146,7 +165,14 @@ pub const Mat2x3 = extern struct {
     }
 
     pub fn translated(self: @This(), delta: Vec2) @This() {
-        return @This().translation(delta).times(self);
+        return translation(delta).times(self);
+    }
+
+    test translated {
+        try std.testing.expectEqual(Mat2x3{
+            .r0 = .{ .x = 1, .y = 0, .z = 1 },
+            .r1 = .{ .x = 0, .y = 1, .z = 2 },
+        }, identity.translated(.{ .x = 1, .y = 2 }));
     }
 
     /// Create a scale matrix from a vector.
@@ -178,7 +204,28 @@ pub const Mat2x3 = extern struct {
     }
 
     pub fn scaled(self: @This(), delta: Vec2) @This() {
-        return @This().scale(delta).times(self);
+        return scale(delta).times(self);
+    }
+
+    test scaled {
+        try std.testing.expectEqual(
+            Mat2x3{
+                .r0 = .{ .x = 0.5, .y = 0.0, .z = 0.0 },
+                .r1 = .{ .x = 0.0, .y = 1.7, .z = 0.0 },
+            },
+            Mat2x3.scale(.{ .x = 0.5, .y = 1.7 }),
+        );
+        try std.testing.expectEqual(
+            Vec2{ .x = 0.5, .y = -6.0 },
+            Mat2x3.identity.scaled(.{ .x = 0.5, .y = -2.0 })
+                .timesPoint(.{ .x = 1.0, .y = 3.0 }),
+        );
+        try std.testing.expectEqual(
+            Vec2{ .x = 0.5, .y = -6.0 },
+            Mat2x3.identity.scaled(.{ .x = 0.5, .y = -2.0 })
+                .timesDir(.{ .x = 1.0, .y = 3.0 }),
+        );
+        try std.testing.expectEqual(Vec2.zero, Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).getTranslation());
     }
 
     test "rotatedTranslatedScaled" {
@@ -191,7 +238,7 @@ pub const Mat2x3 = extern struct {
     }
 
     /// Returns `lhs` multiplied by `rhs`.
-    pub fn times(lhs: @This(), rhs: @This()) @This() {
+    pub fn times(lhs: Mat2x3, rhs: Mat2x3) Mat2x3 {
         return .{
             .r0 = .{
                 .x = @mulAdd(f32, lhs.r0.x, rhs.r0.x, lhs.r0.y * rhs.r1.x),
@@ -345,8 +392,8 @@ pub const Mat2x3 = extern struct {
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec2) Vec2 {
         return .{
-            .x = self.r0.innerProd(v.point()),
-            .y = self.r1.innerProd(v.point()),
+            .x = self.r0.z + @mulAdd(f32, self.r0.x, v.x, self.r0.y * v.y),
+            .y = self.r1.z + @mulAdd(f32, self.r1.x, v.x, self.r1.y * v.y),
         };
     }
 
@@ -361,7 +408,10 @@ pub const Mat2x3 = extern struct {
 
     /// Returns a vector representing a direction transformed by this matrix.
     pub fn timesDir(self: @This(), v: Vec2) Vec2 {
-        return self.timesVec3(v.dir()).xy();
+        return .{
+            .x = @mulAdd(f32, self.r0.x, v.x, self.r0.y * v.y),
+            .y = @mulAdd(f32, self.r1.x, v.x, self.r1.y * v.y),
+        };
     }
 
     test timesDir {
@@ -378,7 +428,7 @@ pub const Mat2x3 = extern struct {
         return .{
             .x = self.r0.innerProd(v),
             .y = self.r1.innerProd(v),
-            .z = Vec3.z_pos.innerProd(v),
+            .z = v.z,
         };
     }
 

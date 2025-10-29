@@ -4,6 +4,7 @@ const geom = @import("root.zig");
 const math = std.math;
 
 const Vec2 = geom.Vec2;
+const Vec4 = geom.Vec4;
 const Bivec3 = geom.Bivec3;
 const Rotor3 = geom.Rotor3;
 
@@ -450,6 +451,26 @@ pub const Vec3 = extern struct {
             .yx = 0.0,
             .a = 1.0,
         }, Vec3.y_pos.geomProd(.z_pos));
+    }
+
+    /// Returns the equivalent homogeneous point.
+    pub fn point(self: Vec3) Vec4 {
+        return .{ .x = self.x, .y = self.y, .z = self.z, .w = 1.0 };
+    }
+
+    test point {
+        var v: Vec3 = .{ .x = 1, .y = 2, .z = 3 };
+        try std.testing.expectEqual(Vec4{ .x = 1, .y = 2, .z = 3, .w = 1 }, v.point());
+    }
+
+    /// Returns the equivalent homogeneous direction.
+    pub fn dir(self: Vec3) Vec4 {
+        return .{ .x = self.x, .y = self.y, .z = self.z, .w = 0.0 };
+    }
+
+    test dir {
+        var v: Vec3 = .{ .x = 1, .y = 2, .z = 3 };
+        try std.testing.expectEqual(Vec4{ .x = 1, .y = 2, .z = 3, .w = 0 }, v.dir());
     }
 
     /// Returns the x and y components.
