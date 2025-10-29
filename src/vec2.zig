@@ -397,21 +397,21 @@ pub const Vec2 = extern struct {
     /// an oriented area.
     pub fn outerProd(lhs: Vec2, rhs: Vec2) Bivec2 {
         return .{
-            .xy = @mulAdd(f32, lhs.x, rhs.y, -rhs.x * lhs.y),
+            .yx = @mulAdd(f32, -lhs.x, rhs.y, rhs.x * lhs.y),
         };
     }
 
     test outerProd {
         const a: Vec2 = .x_pos;
         const b: Vec2 = .y_pos;
-        try std.testing.expectEqual(Bivec2{ .xy = 1.0 }, a.outerProd(b));
+        try std.testing.expectEqual(Bivec2{ .yx = -1.0 }, a.outerProd(b));
     }
 
     /// Returns the geometric product of two vectors. This is an intermediate step in creating a
     /// usable rotor, it's more likely that you want `Rotor2.fromTo`.
     pub fn geomProd(lhs: Vec2, rhs: Vec2) Rotor2 {
         return .{
-            .xy = lhs.outerProd(rhs).xy,
+            .yx = lhs.outerProd(rhs).yx,
             .a = lhs.innerProd(rhs) + 1.0,
         };
     }
@@ -419,7 +419,7 @@ pub const Vec2 = extern struct {
     test geomProd {
         const a: Vec2 = .x_pos;
         const b: Vec2 = .y_pos;
-        try std.testing.expectEqual(Rotor2{ .xy = 1.0, .a = 1.0 }, a.geomProd(b));
+        try std.testing.expectEqual(Rotor2{ .yx = -1.0, .a = 1.0 }, a.geomProd(b));
     }
 
     /// Returns the normal to the vector CW from the input. Assumes the vector is already
