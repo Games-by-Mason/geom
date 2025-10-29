@@ -12,6 +12,11 @@ const lerp = tween.interp.lerp;
 /// A three dimensional rotor. Rotors are a generalized form of quaternions which are used for
 /// rotation. Unlike quaternions, rotors generalize to all dimensions. Rotors can represent up to
 /// two full rotations, at which point they wrap back around.
+///
+/// No method is provided for constructing a `Rotor3` from Euler angles, as this library has no
+/// opinion on the "correct" order in which to compose the three rotations. You can implement this
+/// function with your preferred order by multiplying calls to `fromPlaneAngle`, or you can simply
+/// use `fromPlaneAngle` or `fromTo` instead of using Euler angles.
 pub const Rotor3 = extern struct {
     /// The component that rotates from x to y along the yz plane.
     ///
@@ -266,62 +271,6 @@ pub const Rotor3 = extern struct {
         try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yz_pos, 2.0 * math.pi).timesVec3(.z_pos));
         try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.yz_pos, 2.0 * math.pi).timesVec3(.z_neg));
     }
-
-    // // XXX: ... rename rotor2 to fromEuler too?
-    // /// Creates a rotor that from the given angle. Prefer `fromTo` when not operating on human
-    // /// input.
-    // ///
-    // /// Angles greater than 2PI wrap.
-    // pub fn fromAngle(rad: f32) Rotor3 {
-    //     return .{
-    //         .yx = -@sin(rad / 2.0),
-    //         .a = @cos(rad / 2.0),
-    //     };
-    // }
-
-    //     test fromAngle {
-    //         const pi = std.math.pi;
-
-    //         // Test rotating 0 degrees
-    //         try std.testing.expectEqual(Vec2.x_pos, Rotor3.fromAngle(0).timesVec3(.x_pos));
-    //         try std.testing.expectEqual(Vec2.x_neg, Rotor3.fromAngle(0).timesVec3(.x_neg));
-    //         try std.testing.expectEqual(Vec2.y_pos, Rotor3.fromAngle(0).timesVec3(.y_pos));
-    //         try std.testing.expectEqual(Vec2.y_neg, Rotor3.fromAngle(0).timesVec3(.y_neg));
-
-    //         // Test rotating 90 degrees
-    //         try expectVec3ApproxEql(Vec2.y_neg, Rotor3.fromAngle(pi / 2.0).timesVec3(.x_pos));
-    //         try expectVec3ApproxEql(Vec2.y_pos, Rotor3.fromAngle(-pi / 2.0).timesVec3(.x_pos));
-    //         try expectVec3ApproxEql(Vec2.x_pos, Rotor3.fromAngle(pi / 2.0).timesVec3(.y_pos));
-    //         try expectVec3ApproxEql(Vec2.x_neg, Rotor3.fromAngle(-pi / 2.0).timesVec3(.y_pos));
-
-    //         // Test rotating 180 degrees
-    //         try expectVec3ApproxEql(Vec2.x_neg, Rotor3.fromAngle(pi).timesVec3(.x_pos));
-    //         try expectVec3ApproxEql(Vec2.y_neg, Rotor3.fromAngle(pi).timesVec3(.y_pos));
-    //         try expectVec3ApproxEql(Vec2.x_pos, Rotor3.fromAngle(pi).timesVec3(.x_neg));
-    //         try expectVec3ApproxEql(Vec2.y_pos, Rotor3.fromAngle(pi).timesVec3(.y_neg));
-
-    //         // Test rotating 360 degrees
-    //         try expectVec3ApproxEql(Vec2.x_pos, Rotor3.fromAngle(2.0 * pi).timesVec3(.x_pos));
-    //         try expectVec3ApproxEql(Vec2.y_pos, Rotor3.fromAngle(2.0 * pi).timesVec3(.y_pos));
-    //         try expectVec3ApproxEql(Vec2.x_neg, Rotor3.fromAngle(2.0 * pi).timesVec3(.x_neg));
-    //         try expectVec3ApproxEql(Vec2.y_neg, Rotor3.fromAngle(2.0 * pi).timesVec3(.y_neg));
-
-    //         // Check field values
-    //         try expectRotor3ApproxEql(
-    //             Rotor3{ .a = 0.924, .yx = -0.383 },
-    //             .fromAngle(std.math.pi / 4.0),
-    //         );
-
-    //         try expectRotor3ApproxEql(
-    //             Rotor3{ .yx = 0.0, .a = 1.0 },
-    //             .fromAngle(0.0),
-    //         );
-
-    //         try expectRotor3ApproxEql(
-    //             Rotor3{ .yx = -@sin(0.5 / 2.0), .a = @cos(0.5 / 2.0) },
-    //             .fromAngle(0.5),
-    //         );
-    //     }
 
     /// Returns the squared magnitude of the rotor.
     pub fn magSq(self: Rotor3) f32 {
