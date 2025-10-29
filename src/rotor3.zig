@@ -586,23 +586,24 @@ pub const Rotor3 = extern struct {
     pub fn ln(self: Rotor3) Bivec3 {
         const bivec: Bivec3 = .{ .yz = self.yz, .xz = self.xz, .yx = self.yx };
         const cos = self.a;
-        const sin = bivec.mag();
+        const sin_sq = bivec.magSq();
 
-        if (sin == 0.0) {
-            // If sin is 0, cos must be either -1 or 1--we check with lt to avoid rounding errors.
+        // If sin is 0, cos must be either -1 or 1.
+        if (sin_sq == 0.0) {
             if (cos > 0.0) {
-                // Cos is 1, it's a 0 degree rotation.
+                // Cos is ~1, it's a 0 degree rotation.
                 return .{ .yz = 0.0, .xz = 0.0, .yx = 0.0 };
             } else {
-                // Cos is -1, it's a 360 degree rotation around an arbitrary plane.
+                // Cos is ~-1, it's a 360 degree rotation around an arbitrary plane.
                 return .{ .yz = 0.0, .xz = 0.0, .yx = math.pi };
             }
-        } else {
-            // Normalize the bivector by dividing by its current magnitude (sin) and then scale it by the
-            // half angle.
-            const half = std.math.atan2(sin, cos);
-            return bivec.scaled(half / sin);
         }
+
+        // Normalize the bivector by dividing by its current magnitude (sin) and then scale it by
+        // the half angle.
+        const sin = @sqrt(sin_sq);
+        const half = std.math.atan2(sin, cos);
+        return bivec.scaled(half / sin);
     }
 
     test ln {
