@@ -395,7 +395,6 @@ pub const Vec3 = extern struct {
         try std.testing.expectEqual(47, a.innerProd(b));
     }
 
-    // XXX: ...
     /// Returns the outer product of two vectors. Generalized form of the cross product, result is
     /// an oriented area.
     pub fn outerProd(lhs: Vec3, rhs: Vec3) Bivec3 {

@@ -562,18 +562,37 @@ pub const Rotor3 = extern struct {
         self.* = self.times(other);
     }
 
-    // XXX: test z
     test mul {
         const xy: Rotor3 = .fromTo(.x_pos, .y_pos);
         const yx: Rotor3 = .fromTo(.y_pos, .x_pos);
         const xy_half = xy.nlerp(.identity, 0.5);
         const yx_half = yx.nlerp(.identity, 0.5);
 
+        const xz: Rotor3 = .fromTo(.x_pos, .z_pos);
+        const zx: Rotor3 = .fromTo(.z_pos, .x_pos);
+        const xz_half = xz.nlerp(.identity, 0.5);
+        const zx_half = zx.nlerp(.identity, 0.5);
+
+        const yz: Rotor3 = .fromTo(.x_pos, .z_pos);
+        const zy: Rotor3 = .fromTo(.z_pos, .x_pos);
+        const yz_half = yz.nlerp(.identity, 0.5);
+        const zy_half = zy.nlerp(.identity, 0.5);
+
         // Canceling out
         try expectRotor3ApproxEql(Rotor3.identity, xy.times(yx));
         try expectRotor3ApproxEql(Rotor3.identity, yx.times(xy));
         try expectRotor3ApproxEql(Rotor3.identity, yx_half.times(xy_half));
         try expectRotor3ApproxEql(Rotor3.identity, xy_half.times(yx_half));
+
+        try expectRotor3ApproxEql(Rotor3.identity, xz.times(zx));
+        try expectRotor3ApproxEql(Rotor3.identity, zx.times(xz));
+        try expectRotor3ApproxEql(Rotor3.identity, zx_half.times(xz_half));
+        try expectRotor3ApproxEql(Rotor3.identity, xz_half.times(zx_half));
+
+        try expectRotor3ApproxEql(Rotor3.identity, yz.times(zy));
+        try expectRotor3ApproxEql(Rotor3.identity, zy.times(yz));
+        try expectRotor3ApproxEql(Rotor3.identity, zy_half.times(yz_half));
+        try expectRotor3ApproxEql(Rotor3.identity, yz_half.times(zy_half));
 
         // 180 degrees (the sign here is arbitrary for `fromTo` so we manually write out the result)
         try expectRotor3ApproxEql(
@@ -584,20 +603,41 @@ pub const Rotor3 = extern struct {
             Rotor3{ .yz = 0.0, .xz = 0.0, .yx = -1.0, .a = 0.0 },
             xy.times(xy),
         );
+        try expectRotor3ApproxEql(
+            Rotor3{ .yz = 0.0, .xz = 1.0, .yx = 0.0, .a = 0.0 },
+            xz.times(xz),
+        );
+        try expectRotor3ApproxEql(
+            Rotor3{ .yz = 0.0, .xz = -1.0, .yx = 0.0, .a = 0.0 },
+            zx.times(zx),
+        );
+        try expectRotor3ApproxEql(
+            Rotor3{ .yz = 0.0, .xz = 1.0, .yx = 0.0, .a = 0.0 },
+            yz.times(yz),
+        );
+        try expectRotor3ApproxEql(
+            Rotor3{ .yz = 0.0, .xz = -1.0, .yx = 0.0, .a = 0.0 },
+            zy.times(zy),
+        );
 
         // Increments of 45 degrees
         try expectRotor3ApproxEql(xy, xy_half.times(xy_half));
         try expectRotor3ApproxEql(yx, yx_half.times(yx_half));
+
+        try expectRotor3ApproxEql(xz, xz_half.times(xz_half));
+        try expectRotor3ApproxEql(zx, zx_half.times(zx_half));
+
+        try expectRotor3ApproxEql(yz, yz_half.times(yz_half));
+        try expectRotor3ApproxEql(zy, zy_half.times(zy_half));
     }
 
     /// Takes the natural log of the given rotor, resulting in a bivector representing the plane the
     /// rotation occurs on with a magnitude of half the angle of rotation in radians. The rotor must
     /// be normalized.
     pub fn ln(self: Rotor3) Bivec3 {
-        // XXX: simplify like rotor2? or gonna replace anyway?
         const bivec: Bivec3 = .{ .yz = self.yz, .xz = self.xz, .yx = self.yx };
         const cos = self.a;
-        const sin = bivec.mag(); // XXX: only sqrt if needed? use approx?
+        const sin = bivec.mag();
 
         if (sin == 0.0) {
             // If sin is 0, cos must be either -1 or 1--we check with lt to avoid rounding errors.
@@ -691,7 +731,6 @@ pub const Rotor3 = extern struct {
         );
     }
 
-    // XXX: file issue for optimized version, see blog?
     /// Spherically linearly interpolates between two rotors. See also `nlerp`.
     ///
     /// Interpolates a constant velocity, but is computationally heavy and is not commutative. Not

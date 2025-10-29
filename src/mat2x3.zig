@@ -6,7 +6,6 @@ const Vec3 = geom.Vec3;
 const Rotor2 = geom.Rotor2;
 const Frustum2 = geom.Frustum2;
 
-// XXX: make mat3x4
 /// A row major affine transformation matrix for working in two dimensions.
 pub const Mat2x3 = extern struct {
     /// Row 0, the x basis vector.
