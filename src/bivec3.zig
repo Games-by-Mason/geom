@@ -67,9 +67,9 @@ pub const Bivec3 = extern struct {
     // XXX: add renormalized as well?
     /// Returns the normalized bivector. If the bivector is 0, it is returned unchanged.
     pub fn normalized(self: Bivec3) Bivec3 {
-        const len = self.mag();
+        const len = self.magSq();
         if (len == 0) return self;
-        return self.scaled(1.0 / len);
+        return self.scaled(geom.invSqrt(len));
     }
 
     test normalized {

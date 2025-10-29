@@ -297,9 +297,9 @@ pub const Vec3 = extern struct {
 
     /// Returns the vector renormalized. Assumes the input is already near normal.
     pub fn renormalized(self: Vec3) Vec3 {
-        const len = self.mag();
+        const len = self.magSq();
         if (len == 0) return self;
-        return self.scaled(1.0 / len);
+        return self.scaled(geom.invSqrtNearOne(len));
     }
 
     test renormalized {
@@ -312,7 +312,7 @@ pub const Vec3 = extern struct {
 
     /// Renormalizes the vector. See `renormalized`.
     pub fn renormalize(self: *Vec3) void {
-        self.* = self.normalized();
+        self.* = self.renormalized();
     }
 
     test renormalize {
@@ -326,9 +326,9 @@ pub const Vec3 = extern struct {
     /// Returns the vector normalized. If the vector is `.zero`, returns it unchanged. If your
     /// input is nearly normal already, consider using `renormalize` instead.
     pub fn normalized(self: Vec3) Vec3 {
-        const len = self.mag();
+        const len = self.magSq();
         if (len == 0) return self;
-        return self.scaled(1.0 / len);
+        return self.scaled(geom.invSqrt(len));
     }
 
     test normalized {
