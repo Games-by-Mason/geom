@@ -64,12 +64,39 @@ pub const Bivec3 = extern struct {
         try std.testing.expectEqual(Bivec3{ .yz = 2.0, .xz = 4.0, .yx = 6.0 }, b);
     }
 
-    // XXX: add renormalized as well?
-    /// Returns the normalized bivector. If the bivector is 0, it is returned unchanged.
+    /// Returns the bivector renormalized. Assumes the input is already near normal.
+    pub fn renormalized(self: Bivec3) Bivec3 {
+        const mag_sq = self.magSq();
+        return self.scaled(geom.invSqrtNearOne(mag_sq));
+    }
+
+    test renormalized {
+        var b: Bivec3 = .{ .yz = 1.05, .xz = 0.0, .yx = 0.0 };
+        b = b.renormalized();
+        try std.testing.expectApproxEqAbs(b.yz, 1.0, 0.01);
+        try std.testing.expectEqual(b.xz, 0.0);
+        try std.testing.expectEqual(b.yx, 0.0);
+    }
+
+    /// Normalizes the bivector. See `normalized`.
+    pub fn renormalize(self: *Bivec3) void {
+        self.* = self.normalized();
+    }
+
+    test renormalize {
+        var b: Bivec3 = .{ .yz = 1.05, .xz = 0.0, .yx = 0.0 };
+        b.renormalize();
+        try std.testing.expectApproxEqAbs(b.yz, 1.0, 0.01);
+        try std.testing.expectEqual(b.xz, 0.0);
+        try std.testing.expectEqual(b.yx, 0.0);
+    }
+
+    /// Returns the normalized bivector. If the bivector is 0, it is returned unchanged. If your
+    /// input is nearly normal already, consider using `renormalized` instead.
     pub fn normalized(self: Bivec3) Bivec3 {
-        const len = self.magSq();
-        if (len == 0) return self;
-        return self.scaled(geom.invSqrt(len));
+        const mag_sq = self.magSq();
+        if (mag_sq == 0) return self;
+        return self.scaled(geom.invSqrt(mag_sq));
     }
 
     test normalized {

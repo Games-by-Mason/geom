@@ -312,9 +312,9 @@ pub const Vec4 = extern struct {
 
     /// Returns the vector renormalized. Assumes the input is already near normal.
     pub fn renormalized(self: Vec4) Vec4 {
-        const len = self.magSq();
-        if (len == 0) return self;
-        return self.scaled(geom.invSqrtNearOne(len));
+        const mag_sq = self.magSq();
+        if (mag_sq == 0) return self;
+        return self.scaled(geom.invSqrtNearOne(mag_sq));
     }
 
     test renormalized {
@@ -343,9 +343,9 @@ pub const Vec4 = extern struct {
     /// Returns the vector normalized. If the vector is `.zero`, returns it unchanged. If your
     /// input is nearly normal already, consider using `renormalize` instead.
     pub fn normalized(self: Vec4) Vec4 {
-        const len = self.magSq();
-        if (len == 0) return self;
-        return self.scaled(geom.invSqrt(len));
+        const mag_sq = self.magSq();
+        if (mag_sq == 0) return self;
+        return self.scaled(geom.invSqrt(mag_sq));
     }
 
     test normalized {
