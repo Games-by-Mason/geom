@@ -284,26 +284,27 @@ pub const Mat3x4 = extern struct {
         try expectVec3ApproxEql(.{ .x = 0.0, .y = 0.0, .z = 0.0 }, m.timesPoint(.zero));
     }
 
-    /// Returns `lhs` multiplied by `rhs`.
     pub fn times(lhs: Mat3x4, rhs: Mat3x4) Mat3x4 {
+        // I've avoided chaining together more than two FMAs at a time as this improves performance
+        // on my AMD Ryzen 9 7950x by 20%.
         return .{
             .r0 = .{
                 .x = @mulAdd(f32, lhs.r0.x, rhs.r0.x, @mulAdd(f32, lhs.r0.y, rhs.r1.x, lhs.r0.z * rhs.r2.x)),
                 .y = @mulAdd(f32, lhs.r0.x, rhs.r0.y, @mulAdd(f32, lhs.r0.y, rhs.r1.y, lhs.r0.z * rhs.r2.y)),
                 .z = @mulAdd(f32, lhs.r0.x, rhs.r0.z, @mulAdd(f32, lhs.r0.y, rhs.r1.z, lhs.r0.z * rhs.r2.z)),
-                .w = @mulAdd(f32, lhs.r0.x, rhs.r0.w, @mulAdd(f32, lhs.r0.y, rhs.r1.w, @mulAdd(f32, lhs.r0.z, rhs.r2.w, lhs.r0.w))),
+                .w = @mulAdd(f32, lhs.r0.x, rhs.r0.w, @mulAdd(f32, lhs.r0.y, rhs.r1.w, (lhs.r0.z * rhs.r2.w + lhs.r0.w))),
             },
             .r1 = .{
                 .x = @mulAdd(f32, lhs.r1.x, rhs.r0.x, @mulAdd(f32, lhs.r1.y, rhs.r1.x, lhs.r1.z * rhs.r2.x)),
                 .y = @mulAdd(f32, lhs.r1.x, rhs.r0.y, @mulAdd(f32, lhs.r1.y, rhs.r1.y, lhs.r1.z * rhs.r2.y)),
                 .z = @mulAdd(f32, lhs.r1.x, rhs.r0.z, @mulAdd(f32, lhs.r1.y, rhs.r1.z, lhs.r1.z * rhs.r2.z)),
-                .w = @mulAdd(f32, lhs.r1.x, rhs.r0.w, @mulAdd(f32, lhs.r1.y, rhs.r1.w, @mulAdd(f32, lhs.r1.z, rhs.r2.w, lhs.r1.w))),
+                .w = @mulAdd(f32, lhs.r1.x, rhs.r0.w, @mulAdd(f32, lhs.r1.y, rhs.r1.w, (lhs.r1.z * rhs.r2.w + lhs.r1.w))),
             },
             .r2 = .{
                 .x = @mulAdd(f32, lhs.r2.x, rhs.r0.x, @mulAdd(f32, lhs.r2.y, rhs.r1.x, lhs.r2.z * rhs.r2.x)),
                 .y = @mulAdd(f32, lhs.r2.x, rhs.r0.y, @mulAdd(f32, lhs.r2.y, rhs.r1.y, lhs.r2.z * rhs.r2.y)),
                 .z = @mulAdd(f32, lhs.r2.x, rhs.r0.z, @mulAdd(f32, lhs.r2.y, rhs.r1.z, lhs.r2.z * rhs.r2.z)),
-                .w = @mulAdd(f32, lhs.r2.x, rhs.r0.w, @mulAdd(f32, lhs.r2.y, rhs.r1.w, @mulAdd(f32, lhs.r2.z, rhs.r2.w, lhs.r2.w))),
+                .w = @mulAdd(f32, lhs.r2.x, rhs.r0.w, @mulAdd(f32, lhs.r2.y, rhs.r1.w, (lhs.r2.z * rhs.r2.w + lhs.r2.w))),
             },
         };
     }
