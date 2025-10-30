@@ -923,7 +923,7 @@ test voronoiF1F2 {
         voronoiF1F2(Vec2{ .x = 0.0, .y = 0.0 }).dist2[1],
     );
     try std.testing.expectEqual(
-        7.610585e-1,
+        7.6105857e-1,
         voronoiF1F2(Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 }).dist2[1],
     );
     try std.testing.expectEqual(

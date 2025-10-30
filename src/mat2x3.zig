@@ -37,9 +37,9 @@ pub const Mat2x3 = extern struct {
         try std.testing.expect(!Mat2x3.identity.eql(Mat2x3.translation(.y_pos)));
     }
 
-    /// Returns an orthographic projection matrix that converts from view space to Vulkan/DX12 clip
+    /// Returns an orthographic projection matrix that converts from view space to Vulkan clip
     /// space.
-    pub fn ortho(frustum: Frustum2) @This() {
+    pub fn orthoFromFrustum(frustum: Frustum2) @This() {
         const width = frustum.right - frustum.left;
         const height = frustum.bottom - frustum.top;
         const x_scale = 2 / width;
@@ -52,16 +52,26 @@ pub const Mat2x3 = extern struct {
         };
     }
 
-    test ortho {
+    test orthoFromFrustum {
         const f: Frustum2 = .{
-            .left = -2,
-            .right = 0,
-            .top = 4,
-            .bottom = -2,
+            .left = -2.5,
+            .right = 0.3,
+            .top = 4.1,
+            .bottom = -2.2,
         };
-        const m = ortho(f);
-        try expectVec2ApproxEql(.{ .x = 1.0, .y = 2.0 / 6.0 }, m.timesPoint(.zero));
-        try expectVec2ApproxEql(.{ .x = 2.0, .y = 1 }, m.timesPoint(.{ .x = 1, .y = -2 }));
+        const m = orthoFromFrustum(f);
+        try expectVec2ApproxEql(
+            .{ .x = -1, .y = -1 },
+            m.timesPoint(.{ .x = f.left, .y = f.top }),
+        );
+        try expectVec2ApproxEql(
+            .{ .x = 0, .y = 0 },
+            m.timesPoint(.{ .x = (f.left + f.right) / 2, .y = (f.bottom + f.top) / 2 }),
+        );
+        try expectVec2ApproxEql(
+            .{ .x = 1, .y = 1 },
+            m.timesPoint(.{ .x = f.right, .y = f.bottom }),
+        );
     }
 
     /// Create a rotation matrix from a rotor.
@@ -391,9 +401,11 @@ pub const Mat2x3 = extern struct {
 
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec2) Vec2 {
+        // The missing FMAs are intentional, adding them reduces benchmark performance slightly on
+        // my AMD Ryzen 9 7950X.
         return .{
-            .x = self.r0.z + @mulAdd(f32, self.r0.x, v.x, self.r0.y * v.y),
-            .y = self.r1.z + @mulAdd(f32, self.r1.x, v.x, self.r1.y * v.y),
+            .x = self.r0.y * v.y + @mulAdd(f32, self.r0.x, v.x, self.r0.z),
+            .y = self.r1.y * v.y + @mulAdd(f32, self.r1.x, v.x, self.r1.z),
         };
     }
 

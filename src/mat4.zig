@@ -5,72 +5,63 @@ const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
 const Frustum3 = geom.Frustum3;
-const Mat4 = geom.Mat4;
+const Mat3x4 = geom.Mat3x4;
 
-/// A row major affine transformation matrix for working in three dimensions.
-pub const Mat3x4 = extern struct {
+/// A row major 4x4 matrix.
+pub const Mat4 = extern struct {
     /// Row 0, the x basis vector.
     r0: Vec4,
     /// Row 1, the y basis vector.
     r1: Vec4,
     /// Row 2, the z basis vector.
     r2: Vec4,
+    /// Row 3, the w basis vector.
+    r3: Vec4,
 
     /// The identity matrix. Has no effect.
     pub const identity: @This() = .{
         .r0 = .{ .x = 1, .y = 0, .z = 0, .w = 0 },
         .r1 = .{ .x = 0, .y = 1, .z = 0, .w = 0 },
         .r2 = .{ .x = 0, .y = 0, .z = 1, .w = 0 },
+        .r3 = .{ .x = 0, .y = 0, .z = 0, .w = 1 },
     };
 
     test identity {
         const p1: Vec3 = .{ .x = 2.0, .y = 3.0, .z = 4.0 };
         const p2: Vec3 = .{ .x = 5.0, .y = -2.0, .z = 6.0 };
-        try std.testing.expectEqual(Mat3x4.identity, Mat3x4.identity.times(.identity));
-        try std.testing.expectEqual(p1, Mat3x4.identity.timesPoint(p1));
-        try std.testing.expectEqual(p2, Mat3x4.identity.timesPoint(p2));
+        try std.testing.expectEqual(Mat4.identity, Mat4.identity.times(.identity));
+        try std.testing.expectEqual(p1, Mat4.identity.timesPoint(p1));
+        try std.testing.expectEqual(p2, Mat4.identity.timesPoint(p2));
     }
 
     /// Checks for equality.
-    pub fn eql(self: Mat3x4, other: Mat3x4) bool {
+    pub fn eql(self: Mat4, other: Mat4) bool {
         return std.meta.eql(self, other);
     }
 
     test eql {
-        try std.testing.expect(Mat3x4.identity.eql(Mat3x4.identity));
-        try std.testing.expect(!Mat3x4.identity.eql(Mat3x4.translation(.y_pos)));
+        try std.testing.expect(Mat4.identity.eql(Mat4.identity));
+        try std.testing.expect(!Mat4.identity.eql(Mat4.translation(.y_pos)));
     }
 
-    /// Truncates a `Mat4` into a `Mat3x4`.
-    pub fn fromMat4(m: Mat4) Mat3x4 {
+    /// Extends a `Mat3x4` into a `Mat4` by appending the missing row from `Mat4.identity`.
+    pub fn fromMat3x4(m: Mat3x4) Mat4 {
         return .{
             .r0 = m.r0,
             .r1 = m.r1,
             .r2 = m.r2,
+            .r3 = identity.r3,
         };
     }
 
-    test fromMat4 {
-        try std.testing.expectEqual(identity, Mat3x4.fromMat4(.identity));
+    test fromMat3x4 {
+        try std.testing.expectEqual(identity, Mat4.fromMat3x4(.identity));
     }
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan/DX12 clip
-    /// space. The far plane may be infinite.
-    pub fn orthoFromFrustum(frustum: Frustum3) Mat3x4 {
-        const width = frustum.right - frustum.left;
-        const height = frustum.bottom - frustum.top;
-        const depth = frustum.far - frustum.near;
-        const x_scale = 2 / width;
-        const y_scale = 2 / height;
-        const z_scale = 1.0 / depth;
-        const x_off = -(frustum.right + frustum.left) / width;
-        const y_off = -(frustum.top + frustum.bottom) / height;
-        const z_off = -frustum.near * z_scale;
-        return .{
-            .r0 = .{ .x = x_scale, .y = 0, .z = 0, .w = x_off },
-            .r1 = .{ .x = 0, .y = y_scale, .z = 0, .w = y_off },
-            .r2 = .{ .x = 0, .y = 0, .z = z_scale, .w = z_off },
-        };
+    /// space.
+    pub fn orthoFromFrustum(frustum: Frustum3) Mat4 {
+        return .fromMat3x4(.orthoFromFrustum(frustum));
     }
 
     test orthoFromFrustum {
@@ -135,6 +126,44 @@ pub const Mat3x4 = extern struct {
         }
     }
 
+    /// Returns an perspective projection matrix that converts from view space to Vulkan/DX12 clip
+    /// space.
+    pub fn perspectiveFromFrustum(frustum: Frustum3) Mat4 {
+        var p = orthoFromFrustum(frustum);
+        p.r3.z = if (frustum.far > frustum.near) 1 else -1;
+        p.r3.w = 0;
+        return p;
+    }
+
+    test perspectiveFromFrustum {
+        const f: Frustum3 = .{
+            .left = -2.5,
+            .right = 0.2,
+            .top = 4.3,
+            .bottom = -2.9,
+            .near = -1.35,
+            .far = 2.1,
+        };
+        const m = perspectiveFromFrustum(f);
+        try expectVec4ApproxEql(
+            .{ .x = -1, .y = -1, .z = 0, .w = f.near },
+            m.timesVec4(.{ .x = f.left, .y = f.top, .z = f.near, .w = 1 }),
+        );
+        try expectVec4ApproxEql(
+            .{ .x = 0, .y = 0, .z = 0.5, .w = (f.near + f.far) / 2 },
+            m.timesVec4(.{
+                .x = (f.left + f.right) / 2,
+                .y = (f.bottom + f.top) / 2,
+                .z = (f.near + f.far) / 2,
+                .w = 1,
+            }),
+        );
+        try expectVec4ApproxEql(
+            .{ .x = 1, .y = 1, .z = 1, .w = f.far },
+            m.timesVec4(.{ .x = f.right, .y = f.bottom, .z = f.far, .w = 1 }),
+        );
+    }
+
     /// Create a rotation matrix from a rotor.
     pub fn rotation(rotor: Rotor3) @This() {
         const inverse = rotor.inverse();
@@ -145,11 +174,12 @@ pub const Mat3x4 = extern struct {
             .r0 = x.dir(),
             .r1 = y.dir(),
             .r2 = z.dir(),
+            .r3 = identity.r3,
         };
     }
 
     test rotation {
-        const m = Mat3x4.rotation(Rotor3.fromTo(.y_pos, .x_pos).nlerp(.identity, 0.5));
+        const m = Mat4.rotation(Rotor3.fromTo(.y_pos, .x_pos).nlerp(.identity, 0.5));
         try std.testing.expectEqual(Vec3.zero, m.getTranslation());
 
         try std.testing.expectApproxEqAbs(@cos(std.math.pi / 4.0), m.r0.x, 0.01);
@@ -159,66 +189,66 @@ pub const Mat3x4 = extern struct {
 
         try expectVec3ApproxEql(
             .y_pos,
-            Mat3x4.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.x_pos),
+            Mat4.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.x_pos),
         );
         try expectVec3ApproxEql(
             .x_neg,
-            Mat3x4.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.y_pos),
+            Mat4.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.y_pos),
         );
         try expectVec3ApproxEql(
             .x_pos,
-            Mat3x4.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.x_neg),
+            Mat4.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.x_neg),
         );
         try expectVec3ApproxEql(
             .y_neg,
-            Mat3x4.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.y_pos),
+            Mat4.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.y_pos),
         );
 
         try expectVec3ApproxEql(
             .y_pos,
-            Mat3x4.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.x_pos),
+            Mat4.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.x_pos),
         );
         try expectVec3ApproxEql(
             .x_neg,
-            Mat3x4.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.y_pos),
+            Mat4.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.y_pos),
         );
         try expectVec3ApproxEql(
             .x_pos,
-            Mat3x4.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.x_neg),
+            Mat4.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.x_neg),
         );
         try expectVec3ApproxEql(
             .y_neg,
-            Mat3x4.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.y_pos),
+            Mat4.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.y_pos),
         );
 
         try expectVec3ApproxEql(
             .y_pos,
-            Mat3x4.rotation(.fromTo(.z_pos, .y_pos)).timesPoint(.z_pos),
+            Mat4.rotation(.fromTo(.z_pos, .y_pos)).timesPoint(.z_pos),
         );
         try expectVec3ApproxEql(
             .z_neg,
-            Mat3x4.rotation(.fromTo(.z_pos, .y_pos)).timesPoint(.y_pos),
+            Mat4.rotation(.fromTo(.z_pos, .y_pos)).timesPoint(.y_pos),
         );
         try expectVec3ApproxEql(
             .z_pos,
-            Mat3x4.rotation(.fromTo(.z_neg, .z_pos)).timesPoint(.z_neg),
+            Mat4.rotation(.fromTo(.z_neg, .z_pos)).timesPoint(.z_neg),
         );
         try expectVec3ApproxEql(
             .z_pos,
-            Mat3x4.rotation(.fromTo(.y_pos, .y_neg)).timesPoint(.z_pos),
+            Mat4.rotation(.fromTo(.y_pos, .y_neg)).timesPoint(.z_pos),
         );
 
         try expectVec3ApproxEql(
             .x_pos,
-            Mat3x4.rotation(.fromTo(.z_pos, .x_pos)).timesPoint(.z_pos),
+            Mat4.rotation(.fromTo(.z_pos, .x_pos)).timesPoint(.z_pos),
         );
         try expectVec3ApproxEql(
             .z_neg,
-            Mat3x4.rotation(.fromTo(.z_pos, .x_pos)).timesPoint(.x_pos),
+            Mat4.rotation(.fromTo(.z_pos, .x_pos)).timesPoint(.x_pos),
         );
         try expectVec3ApproxEql(
             .z_pos,
-            Mat3x4.rotation(.fromTo(.x_pos, .x_neg)).timesPoint(.z_pos),
+            Mat4.rotation(.fromTo(.x_pos, .x_neg)).timesPoint(.z_pos),
         );
     }
 
@@ -240,30 +270,32 @@ pub const Mat3x4 = extern struct {
             .r0 = .{ .x = 1, .y = 0, .z = 0, .w = delta.x },
             .r1 = .{ .x = 0, .y = 1, .z = 0, .w = delta.y },
             .r2 = .{ .x = 0, .y = 0, .z = 1, .w = delta.z },
+            .r3 = .{ .x = 0, .y = 0, .z = 0, .w = 1 },
         };
     }
 
     test translation {
-        try std.testing.expectEqual(Mat3x4{
+        try std.testing.expectEqual(Mat4{
             .r0 = .{ .x = 1, .y = 0, .z = 0, .w = 1 },
             .r1 = .{ .x = 0, .y = 1, .z = 0, .w = 2 },
             .r2 = .{ .x = 0, .y = 0, .z = 1, .w = 3 },
-        }, Mat3x4.translation(.{ .x = 1, .y = 2, .z = 3 }));
+            .r3 = .{ .x = 0, .y = 0, .z = 0, .w = 1 },
+        }, Mat4.translation(.{ .x = 1, .y = 2, .z = 3 }));
         try std.testing.expectEqual(
             Vec3{ .x = 3, .y = 5, .z = 7 },
-            Mat3x4.translation(.{ .x = 1, .y = 2, .z = 3 }).timesPoint(.{ .x = 2, .y = 3, .z = 4 }),
+            Mat4.translation(.{ .x = 1, .y = 2, .z = 3 }).timesPoint(.{ .x = 2, .y = 3, .z = 4 }),
         );
         try std.testing.expectEqual(
             Vec3{ .x = 7, .y = 5, .z = 6 },
-            Mat3x4.translation(.{ .x = -1, .y = 3, .z = 5 }).timesPoint(.{ .x = 8, .y = 2, .z = 1 }),
+            Mat4.translation(.{ .x = -1, .y = 3, .z = 5 }).timesPoint(.{ .x = 8, .y = 2, .z = 1 }),
         );
         try std.testing.expectEqual(
             Vec3{ .x = 2, .y = 3, .z = -1 },
-            Mat3x4.translation(.{ .x = 1, .y = 2, .z = 4 }).timesDir(.{ .x = 2, .y = 3, .z = -1 }),
+            Mat4.translation(.{ .x = 1, .y = 2, .z = 4 }).timesDir(.{ .x = 2, .y = 3, .z = -1 }),
         );
         try std.testing.expectEqual(
             Vec3{ .x = 8, .y = 2, .z = -1 },
-            Mat3x4.translation(.{ .x = -1, .y = 3, .z = 4 }).timesDir(.{ .x = 8, .y = 2, .z = -1 }),
+            Mat4.translation(.{ .x = -1, .y = 3, .z = 4 }).timesDir(.{ .x = 8, .y = 2, .z = -1 }),
         );
     }
 
@@ -272,42 +304,45 @@ pub const Mat3x4 = extern struct {
     }
 
     test translated {
-        try std.testing.expectEqual(Mat3x4{
+        try std.testing.expectEqual(Mat4{
             .r0 = .{ .x = 1, .y = 0, .z = 0, .w = 1 },
             .r1 = .{ .x = 0, .y = 1, .z = 0, .w = 2 },
             .r2 = .{ .x = 0, .y = 0, .z = 1, .w = 3 },
+            .r3 = .{ .x = 0, .y = 0, .z = 0, .w = 1 },
         }, identity.translated(.{ .x = 1, .y = 2, .z = 3 }));
     }
 
     /// Create a scale matrix from a vector.
-    pub fn scale(amount: Vec3) Mat3x4 {
+    pub fn scale(amount: Vec3) Mat4 {
         return .{
             .r0 = .{ .x = amount.x, .y = 0, .z = 0, .w = 0 },
             .r1 = .{ .x = 0, .y = amount.y, .z = 0, .w = 0 },
             .r2 = .{ .x = 0, .y = 0, .z = amount.z, .w = 0 },
+            .r3 = .{ .x = 0, .y = 0, .z = 0, .w = 1 },
         };
     }
 
     test scale {
         try std.testing.expectEqual(
-            Mat3x4{
+            Mat4{
                 .r0 = .{ .x = 0.5, .y = 0.0, .z = 0.0, .w = 0.0 },
                 .r1 = .{ .x = 0.0, .y = 1.7, .z = 0.0, .w = 0.0 },
                 .r2 = .{ .x = 0.0, .y = 0.0, .z = 1.1, .w = 0.0 },
+                .r3 = .{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0 },
             },
-            Mat3x4.scale(.{ .x = 0.5, .y = 1.7, .z = 1.1 }),
+            Mat4.scale(.{ .x = 0.5, .y = 1.7, .z = 1.1 }),
         );
         try std.testing.expectEqual(
             Vec3{ .x = 0.5, .y = -6.0, .z = 50.0 },
-            Mat3x4.scale(.{ .x = 0.5, .y = -2.0, .z = 10.0 })
+            Mat4.scale(.{ .x = 0.5, .y = -2.0, .z = 10.0 })
                 .timesPoint(.{ .x = 1.0, .y = 3.0, .z = 5.0 }),
         );
         try std.testing.expectEqual(
             Vec3{ .x = 0.5, .y = -6.0, .z = 10.0 },
-            Mat3x4.scale(.{ .x = 0.5, .y = -2.0, .z = 5.0 })
+            Mat4.scale(.{ .x = 0.5, .y = -2.0, .z = 5.0 })
                 .timesDir(.{ .x = 1.0, .y = 3.0, .z = 2.0 }),
         );
-        try std.testing.expectEqual(Vec3.zero, Mat3x4.scale(.{ .x = 0.5, .y = -2.0, .z = 1.5 }).getTranslation());
+        try std.testing.expectEqual(Vec3.zero, Mat4.scale(.{ .x = 0.5, .y = -2.0, .z = 1.5 }).getTranslation());
     }
 
     pub fn scaled(self: @This(), delta: Vec3) @This() {
@@ -316,28 +351,29 @@ pub const Mat3x4 = extern struct {
 
     test scaled {
         try std.testing.expectEqual(
-            Mat3x4{
+            Mat4{
                 .r0 = .{ .x = 0.5, .y = 0.0, .z = 0.0, .w = 0.0 },
                 .r1 = .{ .x = 0.0, .y = 1.7, .z = 0.0, .w = 0.0 },
                 .r2 = .{ .x = 0.0, .y = 0.0, .z = 1.1, .w = 0.0 },
+                .r3 = .{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0 },
             },
-            Mat3x4.scale(.{ .x = 0.5, .y = 1.7, .z = 1.1 }),
+            Mat4.scale(.{ .x = 0.5, .y = 1.7, .z = 1.1 }),
         );
         try std.testing.expectEqual(
             Vec3{ .x = 0.5, .y = -6.0, .z = 50.0 },
-            Mat3x4.identity.scaled(.{ .x = 0.5, .y = -2.0, .z = 10.0 })
+            Mat4.identity.scaled(.{ .x = 0.5, .y = -2.0, .z = 10.0 })
                 .timesPoint(.{ .x = 1.0, .y = 3.0, .z = 5.0 }),
         );
         try std.testing.expectEqual(
             Vec3{ .x = 0.5, .y = -6.0, .z = 10.0 },
-            Mat3x4.identity.scaled(.{ .x = 0.5, .y = -2.0, .z = 5.0 })
+            Mat4.identity.scaled(.{ .x = 0.5, .y = -2.0, .z = 5.0 })
                 .timesDir(.{ .x = 1.0, .y = 3.0, .z = 2.0 }),
         );
-        try std.testing.expectEqual(Vec3.zero, Mat3x4.scale(.{ .x = 0.5, .y = -2.0, .z = 1.5 }).getTranslation());
+        try std.testing.expectEqual(Vec3.zero, Mat4.scale(.{ .x = 0.5, .y = -2.0, .z = 1.5 }).getTranslation());
     }
 
     test "rotatedTranslatedScaled" {
-        var m = Mat3x4.identity;
+        var m = Mat4.identity;
         m = m.translated(.y_pos);
         m = m.rotated(.fromPlaneAngle(.yx_pos, std.math.pi));
         m = m.scaled(.splat(0.5));
@@ -345,16 +381,17 @@ pub const Mat3x4 = extern struct {
         try expectVec3ApproxEql(.{ .x = 0.0, .y = 0.0, .z = 0.0 }, m.timesPoint(.zero));
     }
 
-    pub fn times(lhs: Mat3x4, rhs: Mat3x4) Mat3x4 {
+    pub fn times(lhs: Mat4, rhs: Mat4) Mat4 {
         const V4 = @Vector(4, f32);
 
         const f: V4 = .{ rhs.r2.x, rhs.r2.y, rhs.r2.z, rhs.r2.w };
+        const h: V4 = .{ rhs.r3.x, rhs.r3.y, rhs.r3.z, rhs.r3.w };
         const d: V4 = .{ rhs.r1.x, rhs.r1.y, rhs.r1.z, rhs.r1.w };
         const b: V4 = .{ rhs.r0.x, rhs.r0.y, rhs.r0.z, rhs.r0.w };
         const r0 = b: {
             const e: V4 = @splat(lhs.r0.z);
-            const g: V4 = .{ 0, 0, 0, lhs.r0.w };
-            const temp2 = @mulAdd(V4, e, f, g);
+            const g: V4 = @splat(lhs.r0.w);
+            const temp2 = @mulAdd(V4, e, f, g * h);
 
             const c: V4 = @splat(lhs.r0.y);
             const temp = @mulAdd(V4, c, d, temp2);
@@ -364,8 +401,8 @@ pub const Mat3x4 = extern struct {
         };
         const r1 = b: {
             const e: V4 = @splat(lhs.r1.z);
-            const g: V4 = .{ 0, 0, 0, lhs.r1.w };
-            const temp2 = @mulAdd(V4, e, f, g);
+            const g: V4 = @splat(lhs.r1.w);
+            const temp2 = @mulAdd(V4, e, f, g * h);
 
             const c: V4 = @splat(lhs.r1.y);
             const temp = @mulAdd(V4, c, d, temp2);
@@ -375,8 +412,8 @@ pub const Mat3x4 = extern struct {
         };
         const r2 = b: {
             const e: V4 = @splat(lhs.r2.z);
-            const g: V4 = .{ 0, 0, 0, lhs.r2.w };
-            const temp2 = @mulAdd(V4, e, f, g);
+            const g: V4 = @splat(lhs.r2.w);
+            const temp2 = @mulAdd(V4, e, f, g * h);
 
             const c: V4 = @splat(lhs.r2.y);
             const temp = @mulAdd(V4, c, d, temp2);
@@ -384,41 +421,56 @@ pub const Mat3x4 = extern struct {
             const a: V4 = @splat(lhs.r2.x);
             break :b @mulAdd(V4, a, b, temp);
         };
+        const r3 = b: {
+            const e: V4 = @splat(lhs.r3.z);
+            const g: V4 = @splat(lhs.r3.w);
+            const temp2 = @mulAdd(V4, e, f, g * h);
+
+            const c: V4 = @splat(lhs.r3.y);
+            const temp = @mulAdd(V4, c, d, temp2);
+
+            const a: V4 = @splat(lhs.r3.x);
+            break :b @mulAdd(V4, a, b, temp);
+        };
         return .{
             .r0 = .{ .x = r0[0], .y = r0[1], .z = r0[2], .w = r0[3] },
             .r1 = .{ .x = r1[0], .y = r1[1], .z = r1[2], .w = r1[3] },
             .r2 = .{ .x = r2[0], .y = r2[1], .z = r2[2], .w = r2[3] },
+            .r3 = .{ .x = r3[0], .y = r3[1], .z = r3[2], .w = r3[3] },
         };
     }
 
     test times {
-        const t: Mat3x4 = .translation(.{ .x = 1.0, .y = 2.0, .z = 3.0 });
-        const r: Mat3x4 = .rotation(.fromTo(.y_pos, .x_pos));
-        const s: Mat3x4 = .scale(.{ .x = 0.5, .y = 3.0, .z = 4.0 });
+        const t: Mat4 = .translation(.{ .x = 1.0, .y = 2.0, .z = 3.0 });
+        const r: Mat4 = .rotation(.fromTo(.y_pos, .x_pos));
+        const s: Mat4 = .scale(.{ .x = 0.5, .y = 3.0, .z = 4.0 });
 
         {
-            const a: Mat3x4 = .{
+            const a: Mat4 = .{
                 .r0 = .{ .x = 1, .y = 2, .z = 3, .w = 4 },
                 .r1 = .{ .x = 5, .y = 6, .z = 7, .w = 8 },
                 .r2 = .{ .x = 9, .y = 10, .z = 11, .w = 12 },
+                .r3 = .{ .x = 13, .y = 14, .z = 15, .w = 16 },
             };
-            const b: Mat3x4 = .{
+            const b: Mat4 = .{
                 .r0 = .{ .x = 10, .y = 20, .z = 30, .w = 40 },
                 .r1 = .{ .x = 50, .y = 60, .z = 70, .w = 80 },
                 .r2 = .{ .x = 90, .y = 100, .z = 110, .w = 120 },
+                .r3 = .{ .x = 130, .y = 140, .z = 150, .w = 160 },
             };
             try std.testing.expectEqual(
-                Mat3x4{
-                    .r0 = .{ .x = 380, .y = 440, .z = 500, .w = 564 },
-                    .r1 = .{ .x = 980, .y = 1160, .z = 1340, .w = 1528 },
-                    .r2 = .{ .x = 1580, .y = 1880, .z = 2180, .w = 2492 },
+                Mat4{
+                    .r0 = .{ .x = 900, .y = 1000, .z = 1100, .w = 1200 },
+                    .r1 = .{ .x = 2020, .y = 2280, .z = 2540, .w = 2800 },
+                    .r2 = .{ .x = 3140, .y = 3560, .z = 3980, .w = 4400 },
+                    .r3 = .{ .x = 4260, .y = 4840, .z = 5420, .w = 6000 },
                 },
                 a.times(b),
             );
         }
 
         {
-            var m: Mat3x4 = .identity;
+            var m: Mat4 = .identity;
             m = t.times(m);
             m = r.times(m);
             m = s.times(m);
@@ -447,11 +499,11 @@ pub const Mat3x4 = extern struct {
     }
 
     test mul {
-        const t: Mat3x4 = .translation(.{ .x = 1.0, .y = 2.0, .z = 3.0 });
-        const r: Mat3x4 = .rotation(.fromTo(.y_pos, .x_pos));
-        const s: Mat3x4 = .scale(.{ .x = 0.5, .y = 3.0, .z = 4.0 });
+        const t: Mat4 = .translation(.{ .x = 1.0, .y = 2.0, .z = 3.0 });
+        const r: Mat4 = .rotation(.fromTo(.y_pos, .x_pos));
+        const s: Mat4 = .scale(.{ .x = 0.5, .y = 3.0, .z = 4.0 });
 
-        var m: Mat3x4 = .identity;
+        var m: Mat4 = .identity;
         m.mul(s);
         m.mul(r);
         m.mul(t);
@@ -470,9 +522,9 @@ pub const Mat3x4 = extern struct {
     }
 
     test applied {
-        const t: Mat3x4 = .translation(.{ .x = 1.0, .y = 2.0, .z = 3.0 });
-        const r: Mat3x4 = .rotation(.fromTo(.y_pos, .x_pos));
-        const s: Mat3x4 = .scale(.{ .x = 0.5, .y = 3.0, .z = 4.0 });
+        const t: Mat4 = .translation(.{ .x = 1.0, .y = 2.0, .z = 3.0 });
+        const r: Mat4 = .rotation(.fromTo(.y_pos, .x_pos));
+        const s: Mat4 = .scale(.{ .x = 0.5, .y = 3.0, .z = 4.0 });
 
         const m = t.applied(r).applied(s);
 
@@ -490,11 +542,11 @@ pub const Mat3x4 = extern struct {
     }
 
     test apply {
-        const t: Mat3x4 = .translation(.{ .x = 1.0, .y = 2.0, .z = 3.0 });
-        const r: Mat3x4 = .rotation(.fromTo(.y_pos, .x_pos));
-        const s: Mat3x4 = .scale(.{ .x = 0.5, .y = 3.0, .z = 4.0 });
+        const t: Mat4 = .translation(.{ .x = 1.0, .y = 2.0, .z = 3.0 });
+        const r: Mat4 = .rotation(.fromTo(.y_pos, .x_pos));
+        const s: Mat4 = .scale(.{ .x = 0.5, .y = 3.0, .z = 4.0 });
 
-        var m: Mat3x4 = .identity;
+        var m: Mat4 = .identity;
         m.apply(t);
         m.apply(r);
         m.apply(s);
@@ -513,43 +565,38 @@ pub const Mat3x4 = extern struct {
     }
 
     test getTranslation {
-        const r: Mat3x4 = .translation(.{ .x = 1, .y = 2, .z = 3 });
+        const r: Mat4 = .translation(.{ .x = 1, .y = 2, .z = 3 });
         try std.testing.expectEqual(Vec3{ .x = 1, .y = 2, .z = 3 }, r.getTranslation());
     }
 
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec3) Vec3 {
-        // This is as fast in the benchmarks than my attempt to inline and hand optimize it.
+        // This is faster in the benchmarks than my attempt to inline and hand optimize it.
         return self.timesVec4(v.point()).xyz();
     }
 
     test timesPoint {
         const p1: Vec3 = .{ .x = 2.0, .y = 3.0, .z = 4.0 };
-        try std.testing.expectEqual(p1, Mat3x4.identity.timesPoint(p1));
+        try std.testing.expectEqual(p1, Mat4.identity.timesPoint(p1));
         try std.testing.expectEqual(
             Vec3{ .x = 3, .y = 5, .z = 7 },
-            Mat3x4.translation(.{ .x = 1, .y = 2, .z = 3 }).timesPoint(p1),
+            Mat4.translation(.{ .x = 1, .y = 2, .z = 3 }).timesPoint(p1),
         );
     }
 
     /// Returns a vector representing a direction transformed by this matrix.
     pub fn timesDir(self: @This(), v: Vec3) Vec3 {
-        // The missing FMAs are intentional, adding them reduces benchmark performance slightly on
-        // my AMD Ryzen 9 7950X.
-        return .{
-            .x = @mulAdd(f32, self.r0.z, v.z, self.r0.x * v.x) + self.r0.y * v.y,
-            .y = @mulAdd(f32, self.r1.z, v.z, self.r1.x * v.x) + self.r1.y * v.y,
-            .z = @mulAdd(f32, self.r2.z, v.z, self.r2.x * v.x) + self.r2.y * v.y,
-        };
+        // This is faster in the benchmarks than my attempt to inline and hand optimize it.
+        return self.timesVec4(v.dir()).xyz();
     }
 
     test timesDir {
         try expectVec3ApproxEql(
             Vec3.y_pos,
-            Mat3x4.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.x_pos),
+            Mat4.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.x_pos),
         );
         const p1: Vec3 = .{ .x = 2.0, .y = 3.0, .z = 4.0 };
-        try std.testing.expectEqual(p1, Mat3x4.translation(.{ .x = 1, .y = 2, .z = 3 }).timesDir(p1));
+        try std.testing.expectEqual(p1, Mat4.translation(.{ .x = 1, .y = 2, .z = 3 }).timesDir(p1));
     }
 
     /// Multiplies the matrix by a homogeneous vec4.
@@ -558,14 +605,14 @@ pub const Mat3x4 = extern struct {
             .x = self.r0.innerProd(v),
             .y = self.r1.innerProd(v),
             .z = self.r2.innerProd(v),
-            .w = v.z,
+            .w = self.r3.innerProd(v),
         };
     }
 
     test timesVec4 {
         try expectVec4ApproxEql(
             Vec4.y_pos,
-            Mat3x4.rotation(.fromTo(.x_pos, .y_pos)).timesVec4(.x_pos),
+            Mat4.rotation(.fromTo(.x_pos, .y_pos)).timesVec4(.x_pos),
         );
     }
 };
