@@ -458,6 +458,21 @@ pub const Vec2 = extern struct {
         try std.testing.expectEqual(Vec3{ .x = 1, .y = 2, .z = 0.0 }, v.dir());
     }
 
+    pub fn withZ(self: Vec2, z: f32) Vec3 {
+        return .{
+            .x = self.x,
+            .y = self.y,
+            .z = z,
+        };
+    }
+
+    test withZ {
+        try std.testing.expectEqual(
+            Vec3{ .x = 1, .y = 2, .z = 3 },
+            (Vec2{ .x = 1, .y = 2 }).withZ(3),
+        );
+    }
+
     pub fn clamped(self: Vec2, min: Vec2, max: Vec2) @This() {
         return .{
             .x = std.math.clamp(self.x, min.x, max.x),
