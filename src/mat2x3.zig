@@ -39,48 +39,6 @@ pub const Mat2x3 = extern struct {
         try std.testing.expect(!Mat2x3.identity.eql(Mat2x3.translation(.y_pos)));
     }
 
-    /// Truncates the matrix.
-    pub fn fromMat3x4(m: Mat3x4) Mat2x3 {
-        return .{
-            .r0 = m.r0.xyz(),
-            .r1 = m.r1.xyz(),
-        };
-    }
-
-    test fromMat3x4 {
-        try std.testing.expectEqual(identity, fromMat3x4(.identity));
-    }
-
-    /// Truncates the matrix.
-    pub fn fromMat4(m: Mat4) Mat2x3 {
-        return .{
-            .r0 = m.r0.xyz(),
-            .r1 = m.r1.xyz(),
-        };
-    }
-
-    test fromMat4 {
-        try std.testing.expectEqual(identity, fromMat4(.identity));
-    }
-
-    /// Extends the matrix by appending the missing components from the identity matrix.
-    pub fn toMat3x4(self: Mat2x3) Mat3x4 {
-        return .fromMat2x3(self);
-    }
-
-    test toMat3x4 {
-        try std.testing.expectEqual(Mat3x4.identity, identity.toMat3x4());
-    }
-
-    /// Extends the matrix by appending the missing components from the identity matrix.
-    pub fn toMat4(self: Mat2x3) Mat4 {
-        return .fromMat2x3(self);
-    }
-
-    test toMat4 {
-        try std.testing.expectEqual(Mat4.identity, identity.toMat4());
-    }
-
     /// Returns an orthographic projection matrix that converts from view space to Vulkan clip
     /// space.
     pub fn orthoFromFrustum(frustum: Frustum2) @This() {

@@ -45,8 +45,9 @@ pub const Mat4 = extern struct {
         try std.testing.expect(!Mat4.identity.eql(Mat4.translation(.y_pos)));
     }
 
-    /// Extends the matrix by appending the missing components from the identity matrix.
-    pub fn fromMat3x4(m: Mat3x4) Mat4 {
+    /// Extends the affine matrix into a full matrix by appending the missing components from the
+    /// identity matrix.
+    pub fn fromAffine(m: Mat3x4) Mat4 {
         return .{
             .r0 = m.r0,
             .r1 = m.r1,
@@ -55,46 +56,27 @@ pub const Mat4 = extern struct {
         };
     }
 
-    test fromMat3x4 {
-        try std.testing.expectEqual(identity, fromMat3x4(.identity));
+    test fromAffine {
+        try std.testing.expectEqual(identity, fromAffine(.identity));
     }
 
-    /// Extends the matrix by appending the missing components from the identity matrix.
-    pub fn fromMat2x3(m: Mat2x3) Mat4 {
+    /// Truncates the matrix into an affine matrix.
+    pub fn toAffine(self: Mat4) Mat3x4 {
         return .{
-            .r0 = m.r0.withW(0),
-            .r1 = m.r1.withW(0),
-            .r2 = identity.r2,
-            .r3 = identity.r3,
+            .r0 = self.r0,
+            .r1 = self.r1,
+            .r2 = self.r2,
         };
     }
 
-    test fromMat2x3 {
-        try std.testing.expectEqual(identity, fromMat2x3(.identity));
-    }
-
-    /// Truncates the matrix.
-    pub fn toMat2x3(self: Mat4) Mat2x3 {
-        return .fromMat4(self);
-    }
-
-    test toMat2x3 {
-        try std.testing.expectEqual(Mat2x3.identity, identity.toMat2x3());
-    }
-
-    /// Truncates the matrix.
-    pub fn toMat3x4(self: Mat4) Mat3x4 {
-        return .fromMat4(self);
-    }
-
-    test toMat3x4 {
-        try std.testing.expectEqual(Mat3x4.identity, identity.toMat3x4());
+    test toAffine {
+        try std.testing.expectEqual(Mat3x4.identity, identity.toAffine());
     }
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan/DX12 clip
     /// space.
     pub fn orthoFromFrustum(frustum: Frustum3) Mat4 {
-        return .fromMat3x4(.orthoFromFrustum(frustum));
+        return .fromAffine(.orthoFromFrustum(frustum));
     }
 
     test orthoFromFrustum {
