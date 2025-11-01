@@ -369,7 +369,7 @@ pub const Vec4 = extern struct {
         try std.testing.expectEqual(Vec4.zero, v);
     }
 
-    /// Returns the component wise product of two vectors.
+    /// Returns the componentwise product of two vectors.
     pub fn compProd(self: Vec4, other: Vec4) Vec4 {
         return .{
             .x = self.x * other.x,
@@ -383,6 +383,25 @@ pub const Vec4 = extern struct {
         const a: Vec4 = .{ .x = 2, .y = 3, .z = 4, .w = 5 };
         const b: Vec4 = .{ .x = 4, .y = 5, .z = 6, .w = 7 };
         try std.testing.expectEqual(Vec4{ .x = 8, .y = 15, .z = 24, .w = 35 }, a.compProd(b));
+    }
+
+    /// Returns the componentwise division of two vectors.
+    pub fn compDiv(self: Vec4, other: Vec4) Vec4 {
+        return .{
+            .x = self.x / other.x,
+            .y = self.y / other.y,
+            .z = self.z / other.z,
+            .w = self.w / other.w,
+        };
+    }
+
+    test compDiv {
+        const a: Vec4 = .{ .x = 2, .y = 3, .z = 4, .w = 5 };
+        const b: Vec4 = .{ .x = 4, .y = 5, .z = 6, .w = 7 };
+        try std.testing.expectEqual(
+            Vec4{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0, .w = 5.0 / 7.0 },
+            a.compDiv(b),
+        );
     }
 
     /// Returns the inner product of two vectors. Equivalent to the dot product.
@@ -414,5 +433,78 @@ pub const Vec4 = extern struct {
     test xyz {
         const a: Vec4 = .{ .x = 2, .y = 3, .z = 4, .w = 5 };
         try std.testing.expectEqual(Vec3{ .x = 2, .y = 3, .z = 4 }, a.xyz());
+    }
+
+    pub fn clamped(self: Vec4, min: Vec4, max: Vec4) @This() {
+        return .{
+            .x = std.math.clamp(self.x, min.x, max.x),
+            .y = std.math.clamp(self.y, min.y, max.y),
+            .z = std.math.clamp(self.z, min.z, max.z),
+            .w = std.math.clamp(self.w, min.w, max.w),
+        };
+    }
+
+    test clamped {
+        try std.testing.expectEqual(
+            Vec4{ .x = 10, .y = 4, .z = 5, .w = 2 },
+            (Vec4{ .x = 100, .y = 0, .z = 5, .w = 20 }).clamped(
+                .{ .x = 2, .y = 4, .z = 0, .w = 0 },
+                .{ .x = 10, .y = 20, .z = 100, .w = 2 },
+            ),
+        );
+
+        try std.testing.expectEqual(
+            Vec4{ .x = 2, .y = 20, .z = 1, .w = 10 },
+            (Vec4{ .x = 0, .y = 100, .z = 0, .w = 5 }).clamped(
+                .{ .x = 2, .y = 4, .z = 1, .w = 10 },
+                .{ .x = 10, .y = 20, .z = 100, .w = 20 },
+            ),
+        );
+
+        try std.testing.expectEqual(
+            Vec4{ .x = 3, .y = 10, .z = 100, .w = 5 },
+            (Vec4{ .x = 3, .y = 10, .z = 200, .w = 1 }).clamped(
+                .{ .x = 2, .y = 4, .z = 0, .w = 5 },
+                .{ .x = 10, .y = 20, .z = 100, .w = 5 },
+            ),
+        );
+    }
+
+    pub fn clamp(self: *Vec4, min: Vec4, max: Vec4) void {
+        self.* = self.clamped(min, max);
+    }
+
+    test clamp {
+        {
+            var v: Vec4 = .{ .x = 100, .y = 0, .z = 5, .w = 20 };
+            v.clamp(.{ .x = 2, .y = 4, .z = 0, .w = 0 }, .{ .x = 10, .y = 20, .z = 100, .w = 2 });
+            try std.testing.expectEqual(Vec4{ .x = 10, .y = 4, .z = 5, .w = 2 }, v);
+        }
+        {
+            var v: Vec4 = .{ .x = 0, .y = 100, .z = 0, .w = 5 };
+            v.clamp(.{ .x = 2, .y = 4, .z = 1, .w = 10 }, .{ .x = 10, .y = 20, .z = 100, .w = 20 });
+            try std.testing.expectEqual(Vec4{ .x = 2, .y = 20, .z = 1, .w = 10 }, v);
+        }
+        {
+            var v: Vec4 = .{ .x = 3, .y = 10, .z = 200, .w = 1 };
+            v.clamp(.{ .x = 2, .y = 4, .z = 0, .w = 5 }, .{ .x = 10, .y = 20, .z = 100, .w = 5 });
+            try std.testing.expectEqual(Vec4{ .x = 3, .y = 10, .z = 100, .w = 5 }, v);
+        }
+    }
+
+    /// Converts a homogeneous `Vec4` into a Cartesian `Vec3` by dividing by `w`.
+    pub fn toCartesian(self: Vec4) Vec3 {
+        return .{
+            .x = self.x / self.w,
+            .y = self.y / self.w,
+            .z = self.z / self.w,
+        };
+    }
+
+    test toCartesian {
+        try std.testing.expectEqual(
+            Vec3{ .x = 1, .y = 2, .z = 3 },
+            (Vec4{ .x = 2, .y = 4, .z = 6, .w = 2 }).toCartesian(),
+        );
     }
 };

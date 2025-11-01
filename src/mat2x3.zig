@@ -447,6 +447,8 @@ pub const Mat2x3 = extern struct {
     pub fn timesPoint(self: @This(), v: Vec2) Vec2 {
         // The missing FMAs are intentional, adding them reduces benchmark performance slightly on
         // my AMD Ryzen 9 7950X.
+        // Note that we don't need to divide by the homogeneous coordinate because we know that it's
+        // always 1.
         return .{
             .x = self.r0.y * v.y + @mulAdd(f32, self.r0.x, v.x, self.r0.z),
             .y = self.r1.y * v.y + @mulAdd(f32, self.r1.x, v.x, self.r1.z),

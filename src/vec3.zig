@@ -353,7 +353,7 @@ pub const Vec3 = extern struct {
         try std.testing.expectEqual(Vec3.zero, v);
     }
 
-    /// Returns the component wise product of two vectors.
+    /// Returns the componentwise product of two vectors.
     pub fn compProd(self: Vec3, other: Vec3) Vec3 {
         return .{
             .x = self.x * other.x,
@@ -368,7 +368,7 @@ pub const Vec3 = extern struct {
         try std.testing.expectEqual(Vec3{ .x = 8, .y = 15, .z = 24 }, a.compProd(b));
     }
 
-    /// Returns the component wise division of two vectors.
+    /// Returns the componentwise division of two vectors.
     pub fn compDiv(self: Vec3, other: Vec3) Vec3 {
         return .{
             .x = self.x / other.x,
@@ -551,5 +551,20 @@ pub const Vec3 = extern struct {
             v.clamp(.{ .x = 2, .y = 4, .z = 0 }, .{ .x = 10, .y = 20, .z = 100 });
             try std.testing.expectEqual(Vec3{ .x = 3, .y = 10, .z = 100 }, v);
         }
+    }
+
+    /// Converts a homogeneous `Vec3` into a Cartesian `Vec2` by dividing by `z`.
+    pub fn toCartesian(self: Vec3) Vec2 {
+        return .{
+            .x = self.x / self.z,
+            .y = self.y / self.z,
+        };
+    }
+
+    test toCartesian {
+        try std.testing.expectEqual(
+            Vec2{ .x = 5, .y = 10 },
+            (Vec3{ .x = 10, .y = 20, .z = 2 }).toCartesian(),
+        );
     }
 };

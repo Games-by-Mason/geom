@@ -195,6 +195,10 @@ pub const Mat4 = extern struct {
             .{ .x = 1, .y = 1, .z = 1, .w = f.far },
             m.timesVec4(.{ .x = f.right, .y = f.bottom, .z = f.far, .w = 1 }),
         );
+        try expectVec3ApproxEql(
+            .{ .x = 1 / f.far, .y = 1 / f.far, .z = 1 / f.far },
+            m.timesPoint(.{ .x = f.right, .y = f.bottom, .z = f.far }),
+        );
     }
 
     /// Create a rotation matrix from a rotor.
@@ -604,8 +608,8 @@ pub const Mat4 = extern struct {
 
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec3) Vec3 {
-        // This is faster in the benchmarks than my attempt to inline and hand optimize it.
-        return self.timesVec4(v.point()).xyz();
+        // Inlining this to remove the multiplication by one doesn't improve benchmark performance.
+        return self.timesVec4(v.point()).toCartesian();
     }
 
     test timesPoint {
@@ -619,7 +623,7 @@ pub const Mat4 = extern struct {
 
     /// Returns a vector representing a direction transformed by this matrix.
     pub fn timesDir(self: @This(), v: Vec3) Vec3 {
-        // This is faster in the benchmarks than my attempt to inline and hand optimize it.
+        // This is slightly faster in the benchmarks than my attempt to inline and hand optimize it.
         return self.timesVec4(v.dir()).xyz();
     }
 

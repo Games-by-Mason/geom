@@ -552,6 +552,8 @@ pub const Mat3x4 = extern struct {
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec3) Vec3 {
         // This is as fast in the benchmarks than my attempt to inline and hand optimize it.
+        // We skip the call to `toCartesian` and truncate with `xyz` isntead because we know that w
+        // will always be `1`.
         return self.timesVec4(v.point()).xyz();
     }
 
@@ -590,7 +592,7 @@ pub const Mat3x4 = extern struct {
             .x = self.r0.innerProd(v),
             .y = self.r1.innerProd(v),
             .z = self.r2.innerProd(v),
-            .w = v.z,
+            .w = v.w,
         };
     }
 
