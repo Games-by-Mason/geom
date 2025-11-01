@@ -5,10 +5,11 @@ const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
 const Frustum3 = geom.Frustum3;
-const Mat2x3 = geom.Mat2x3;
-const Mat4 = geom.Mat4;
 
 /// A row major affine transformation matrix for working in three dimensions.
+///
+/// Elides `r3` as compared to `Mat4` to save on space/computation, it's implicitly considered to be
+/// `Mat4.identity.r3`.
 pub const Mat3x4 = extern struct {
     /// Row 0, the x basis vector.
     r0: Vec4,

@@ -4,6 +4,7 @@ const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Mat2x3 = geom.Mat2x3;
+const Mat3 = geom.Mat3;
 const Mat3x4 = geom.Mat3x4;
 const Mat4 = geom.Mat4;
 const Rotor2 = geom.Rotor2;
@@ -68,6 +69,46 @@ pub fn main() !void {
             p = m.timesPoint(p);
         }
         std.debug.print("m23 timesPoint: {}ms\n", .{timer.read() / 1000000});
+        std.debug.print("{}\n", .{p});
+    }
+    {
+        var m: Mat3 = .rotation(.fromAngle(std.math.pi / 3.0));
+        var p: Vec2 = .y_pos;
+        var timer = try std.time.Timer.start();
+        for (0..100_000_000) |_| {
+            p = m.timesDir(p);
+        }
+        std.debug.print("m3 timesDir: {}ms\n", .{timer.read() / 1000000});
+        std.debug.print("{}\n", .{p});
+    }
+    {
+        var m: Mat3 = .rotation(.fromAngle(std.math.pi / 3.0));
+        var p: Vec3 = .y_pos;
+        var timer = try std.time.Timer.start();
+        for (0..100_000_000) |_| {
+            p = m.timesVec3(p);
+        }
+        std.debug.print("m3 timesVec3: {}ms\n", .{timer.read() / 1000000});
+        std.debug.print("{}\n", .{p});
+    }
+    {
+        var m: Mat3 = .identity;
+        const m2: Mat3 = .rotation(.fromAngle(std.math.pi / 3.0));
+        var timer = try std.time.Timer.start();
+        for (0..100_000_000) |_| {
+            m.apply(m2);
+        }
+        std.debug.print("m3 apply: {}ms\n", .{timer.read() / 1000000});
+        std.debug.print("{}\n", .{m});
+    }
+    {
+        var m: Mat3 = .rotation(.fromAngle(std.math.pi / 3.0));
+        var p: Vec2 = .y_pos;
+        var timer = try std.time.Timer.start();
+        for (0..100_000_000) |_| {
+            p = m.timesPoint(p);
+        }
+        std.debug.print("m3 timesPoint: {}ms\n", .{timer.read() / 1000000});
         std.debug.print("{}\n", .{p});
     }
     {

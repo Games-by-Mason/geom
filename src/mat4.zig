@@ -5,7 +5,6 @@ const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
 const Frustum3 = geom.Frustum3;
-const Mat2x3 = geom.Mat2x3;
 const Mat3x4 = geom.Mat3x4;
 
 /// A row major 4x4 matrix.
