@@ -354,7 +354,7 @@ pub const Vec3 = extern struct {
     }
 
     /// Returns the componentwise product of two vectors.
-    pub fn compProd(self: Vec3, other: Vec3) Vec3 {
+    pub fn timesComps(self: Vec3, other: Vec3) Vec3 {
         return .{
             .x = self.x * other.x,
             .y = self.y * other.y,
@@ -362,14 +362,26 @@ pub const Vec3 = extern struct {
         };
     }
 
-    test compProd {
+    test timesComps {
         const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
         const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
-        try std.testing.expectEqual(Vec3{ .x = 8, .y = 15, .z = 24 }, a.compProd(b));
+        try std.testing.expectEqual(Vec3{ .x = 8, .y = 15, .z = 24 }, a.timesComps(b));
+    }
+
+    /// Multiplies `self` componentwise by `other`.
+    pub fn mulComps(self: *Vec3, other: Vec3) void {
+        self.* = self.timesComps(other);
+    }
+
+    test mulComps {
+        var a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
+        a.mulComps(b);
+        try std.testing.expectEqual(Vec3{ .x = 8, .y = 15, .z = 24 }, a);
     }
 
     /// Returns the componentwise division of two vectors.
-    pub fn compDiv(self: Vec3, other: Vec3) Vec3 {
+    pub fn overComps(self: Vec3, other: Vec3) Vec3 {
         return .{
             .x = self.x / other.x,
             .y = self.y / other.y,
@@ -377,10 +389,22 @@ pub const Vec3 = extern struct {
         };
     }
 
-    test compDiv {
+    test overComps {
         const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
         const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
-        try std.testing.expectEqual(Vec3{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0 }, a.compDiv(b));
+        try std.testing.expectEqual(Vec3{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0 }, a.overComps(b));
+    }
+
+    /// Divides `self` componentwise by `other`.
+    pub fn divComps(self: *Vec3, other: Vec3) void {
+        self.* = self.overComps(other);
+    }
+
+    test divComps {
+        var a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
+        a.divComps(b);
+        try std.testing.expectEqual(Vec3{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0 }, a);
     }
 
     /// Returns the inner product of two vectors. Equivalent to the dot product.

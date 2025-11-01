@@ -355,31 +355,55 @@ pub const Vec2 = extern struct {
     }
 
     /// Returns the componentwise product of two vectors.
-    pub fn compProd(self: Vec2, other: Vec2) Vec2 {
+    pub fn timesComps(self: Vec2, other: Vec2) Vec2 {
         return .{
             .x = self.x * other.x,
             .y = self.y * other.y,
         };
     }
 
-    test compProd {
+    test timesComps {
         const a: Vec2 = .{ .x = 2, .y = 3 };
         const b: Vec2 = .{ .x = 4, .y = 5 };
-        try std.testing.expectEqual(Vec2{ .x = 8, .y = 15 }, a.compProd(b));
+        try std.testing.expectEqual(Vec2{ .x = 8, .y = 15 }, a.timesComps(b));
+    }
+
+    /// Multiplies `self` componentwise by `other`.
+    pub fn mulComps(self: *Vec2, other: Vec2) void {
+        self.* = self.timesComps(other);
+    }
+
+    test mulComps {
+        var a: Vec2 = .{ .x = 2, .y = 3 };
+        const b: Vec2 = .{ .x = 4, .y = 5 };
+        a.mulComps(b);
+        try std.testing.expectEqual(Vec2{ .x = 8, .y = 15 }, a);
     }
 
     /// Returns the componentwise division of two vectors.
-    pub fn compDiv(self: Vec2, other: Vec2) Vec2 {
+    pub fn compOver(self: Vec2, other: Vec2) Vec2 {
         return .{
             .x = self.x / other.x,
             .y = self.y / other.y,
         };
     }
 
-    test compDiv {
+    test compOver {
         const a: Vec2 = .{ .x = 2, .y = 3 };
         const b: Vec2 = .{ .x = 4, .y = 5 };
-        try std.testing.expectEqual(Vec2{ .x = 0.5, .y = 0.6 }, a.compDiv(b));
+        try std.testing.expectEqual(Vec2{ .x = 0.5, .y = 0.6 }, a.compOver(b));
+    }
+
+    /// Divides `self` componentwise by `other`.
+    pub fn compDiv(self: *Vec2, other: Vec2) void {
+        self.* = self.compOver(other);
+    }
+
+    test compDiv {
+        var a: Vec2 = .{ .x = 2, .y = 3 };
+        const b: Vec2 = .{ .x = 4, .y = 5 };
+        a.compDiv(b);
+        try std.testing.expectEqual(Vec2{ .x = 0.5, .y = 0.6 }, a);
     }
 
     /// Returns the inner product of two vectors. Equivalent to the dot product.

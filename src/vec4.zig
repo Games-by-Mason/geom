@@ -370,7 +370,7 @@ pub const Vec4 = extern struct {
     }
 
     /// Returns the componentwise product of two vectors.
-    pub fn compProd(self: Vec4, other: Vec4) Vec4 {
+    pub fn timesComps(self: Vec4, other: Vec4) Vec4 {
         return .{
             .x = self.x * other.x,
             .y = self.y * other.y,
@@ -379,14 +379,26 @@ pub const Vec4 = extern struct {
         };
     }
 
-    test compProd {
+    test timesComps {
         const a: Vec4 = .{ .x = 2, .y = 3, .z = 4, .w = 5 };
         const b: Vec4 = .{ .x = 4, .y = 5, .z = 6, .w = 7 };
-        try std.testing.expectEqual(Vec4{ .x = 8, .y = 15, .z = 24, .w = 35 }, a.compProd(b));
+        try std.testing.expectEqual(Vec4{ .x = 8, .y = 15, .z = 24, .w = 35 }, a.timesComps(b));
+    }
+
+    /// Multiplies `self` componentwise by `other`.
+    pub fn mulComps(self: *Vec4, other: Vec4) void {
+        self.* = self.timesComps(other);
+    }
+
+    test mulComps {
+        var a: Vec4 = .{ .x = 2, .y = 3, .z = 4, .w = 5 };
+        const b: Vec4 = .{ .x = 4, .y = 5, .z = 6, .w = 7 };
+        a.mulComps(b);
+        try std.testing.expectEqual(Vec4{ .x = 8, .y = 15, .z = 24, .w = 35 }, a);
     }
 
     /// Returns the componentwise division of two vectors.
-    pub fn compDiv(self: Vec4, other: Vec4) Vec4 {
+    pub fn overComps(self: Vec4, other: Vec4) Vec4 {
         return .{
             .x = self.x / other.x,
             .y = self.y / other.y,
@@ -395,12 +407,27 @@ pub const Vec4 = extern struct {
         };
     }
 
-    test compDiv {
+    test overComps {
         const a: Vec4 = .{ .x = 2, .y = 3, .z = 4, .w = 5 };
         const b: Vec4 = .{ .x = 4, .y = 5, .z = 6, .w = 7 };
         try std.testing.expectEqual(
             Vec4{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0, .w = 5.0 / 7.0 },
-            a.compDiv(b),
+            a.overComps(b),
+        );
+    }
+
+    /// Divides `self` componentwise by `other`.
+    pub fn divComps(self: *Vec4, other: Vec4) void {
+        self.* = self.overComps(other);
+    }
+
+    test divComps {
+        var a: Vec4 = .{ .x = 2, .y = 3, .z = 4, .w = 5 };
+        const b: Vec4 = .{ .x = 4, .y = 5, .z = 6, .w = 7 };
+        a.divComps(b);
+        try std.testing.expectEqual(
+            Vec4{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0, .w = 5.0 / 7.0 },
+            a,
         );
     }
 
