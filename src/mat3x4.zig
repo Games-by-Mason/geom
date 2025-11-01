@@ -5,6 +5,7 @@ const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
 const Frustum3 = geom.Frustum3;
+const Mat2x3 = geom.Mat2x3;
 const Mat4 = geom.Mat4;
 
 /// A row major affine transformation matrix for working in three dimensions.
@@ -41,7 +42,20 @@ pub const Mat3x4 = extern struct {
         try std.testing.expect(!Mat3x4.identity.eql(Mat3x4.translation(.y_pos)));
     }
 
-    /// Truncates a `Mat4` into a `Mat3x4`.
+    /// Extends the matrix by appending the missing components from the identity matrix.
+    pub fn fromMat2x3(m: Mat2x3) Mat3x4 {
+        return .{
+            .r0 = m.r0.withW(0),
+            .r1 = m.r1.withW(0),
+            .r2 = identity.r2,
+        };
+    }
+
+    test fromMat2x3 {
+        try std.testing.expectEqual(identity, fromMat2x3(.identity));
+    }
+
+    /// Truncates the matrix.
     pub fn fromMat4(m: Mat4) Mat3x4 {
         return .{
             .r0 = m.r0,
@@ -51,7 +65,25 @@ pub const Mat3x4 = extern struct {
     }
 
     test fromMat4 {
-        try std.testing.expectEqual(identity, Mat3x4.fromMat4(.identity));
+        try std.testing.expectEqual(identity, fromMat4(.identity));
+    }
+
+    /// Truncates the matrix.
+    pub fn toMat2x3(self: Mat3x4) Mat2x3 {
+        return .fromMat3x4(self);
+    }
+
+    test toMat2x3 {
+        try std.testing.expectEqual(Mat2x3.identity, identity.toMat2x3());
+    }
+
+    /// Extends the matrix by appending the missing components from the identity matrix.
+    pub fn toMat4(self: Mat3x4) Mat4 {
+        return .fromMat3x4(self);
+    }
+
+    test toMat4 {
+        try std.testing.expectEqual(Mat4.identity, identity.toMat4());
     }
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan/DX12 clip
