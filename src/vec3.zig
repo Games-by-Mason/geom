@@ -4,8 +4,9 @@ const geom = @import("root.zig");
 const math = std.math;
 
 const Vec2 = geom.Vec2;
-const Bivec2 = geom.Bivec2;
-const Rotor2 = geom.Rotor2;
+const Vec4 = geom.Vec4;
+const Bivec3 = geom.Bivec3;
+const Rotor3 = geom.Rotor3;
 
 /// A two dimensional vector.
 pub const Vec3 = extern struct {
@@ -297,9 +298,9 @@ pub const Vec3 = extern struct {
 
     /// Returns the vector renormalized. Assumes the input is already near normal.
     pub fn renormalized(self: Vec3) Vec3 {
-        const len = self.mag();
-        if (len == 0) return self;
-        return self.scaled(1.0 / len);
+        const mag_sq = self.magSq();
+        if (mag_sq == 0) return self;
+        return self.scaled(geom.invSqrtNearOne(mag_sq));
     }
 
     test renormalized {
@@ -312,7 +313,7 @@ pub const Vec3 = extern struct {
 
     /// Renormalizes the vector. See `renormalized`.
     pub fn renormalize(self: *Vec3) void {
-        self.* = self.normalized();
+        self.* = self.renormalized();
     }
 
     test renormalize {
@@ -326,9 +327,9 @@ pub const Vec3 = extern struct {
     /// Returns the vector normalized. If the vector is `.zero`, returns it unchanged. If your
     /// input is nearly normal already, consider using `renormalize` instead.
     pub fn normalized(self: Vec3) Vec3 {
-        const len = self.mag();
-        if (len == 0) return self;
-        return self.scaled(1.0 / len);
+        const mag_sq = self.magSq();
+        if (mag_sq == 0) return self;
+        return self.scaled(geom.invSqrt(mag_sq));
     }
 
     test normalized {
@@ -352,8 +353,8 @@ pub const Vec3 = extern struct {
         try std.testing.expectEqual(Vec3.zero, v);
     }
 
-    /// Returns the component wise product of two vectors.
-    pub fn compProd(self: Vec3, other: Vec3) Vec3 {
+    /// Returns the componentwise product of two vectors.
+    pub fn timesComps(self: Vec3, other: Vec3) Vec3 {
         return .{
             .x = self.x * other.x,
             .y = self.y * other.y,
@@ -361,14 +362,26 @@ pub const Vec3 = extern struct {
         };
     }
 
-    test compProd {
+    test timesComps {
         const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
         const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
-        try std.testing.expectEqual(Vec3{ .x = 8, .y = 15, .z = 24 }, a.compProd(b));
+        try std.testing.expectEqual(Vec3{ .x = 8, .y = 15, .z = 24 }, a.timesComps(b));
     }
 
-    /// Returns the component wise division of two vectors.
-    pub fn compDiv(self: Vec3, other: Vec3) Vec3 {
+    /// Multiplies `self` componentwise by `other`.
+    pub fn mulComps(self: *Vec3, other: Vec3) void {
+        self.* = self.timesComps(other);
+    }
+
+    test mulComps {
+        var a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
+        a.mulComps(b);
+        try std.testing.expectEqual(Vec3{ .x = 8, .y = 15, .z = 24 }, a);
+    }
+
+    /// Returns the componentwise division of two vectors.
+    pub fn overComps(self: Vec3, other: Vec3) Vec3 {
         return .{
             .x = self.x / other.x,
             .y = self.y / other.y,
@@ -376,23 +389,110 @@ pub const Vec3 = extern struct {
         };
     }
 
-    test compDiv {
+    test overComps {
         const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
         const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
-        try std.testing.expectEqual(Vec3{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0 }, a.compDiv(b));
+        try std.testing.expectEqual(Vec3{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0 }, a.overComps(b));
+    }
+
+    /// Divides `self` componentwise by `other`.
+    pub fn divComps(self: *Vec3, other: Vec3) void {
+        self.* = self.overComps(other);
+    }
+
+    test divComps {
+        var a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
+        a.divComps(b);
+        try std.testing.expectEqual(Vec3{ .x = 0.5, .y = 0.6, .z = 4.0 / 6.0 }, a);
     }
 
     /// Returns the inner product of two vectors. Equivalent to the dot product.
     pub fn innerProd(self: Vec3, other: Vec3) f32 {
-        const pxy = @mulAdd(f32, self.x, other.x, self.y * other.y);
-        const pxyz = @mulAdd(f32, self.z, other.z, pxy);
-        return pxyz;
+        return @mulAdd(f32, self.x, other.x, @mulAdd(f32, self.y, other.y, self.z * other.z));
     }
 
     test innerProd {
         const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
         const b: Vec3 = .{ .x = 4, .y = 5, .z = 6 };
         try std.testing.expectEqual(47, a.innerProd(b));
+    }
+
+    /// Returns the outer product of two vectors. Generalized form of the cross product, result is
+    /// an oriented area.
+    pub fn outerProd(lhs: Vec3, rhs: Vec3) Bivec3 {
+        return .{
+            .yz = @mulAdd(f32, lhs.y, rhs.z, -lhs.z * rhs.y),
+            .xz = @mulAdd(f32, -lhs.z, rhs.x, lhs.x * rhs.z),
+            .yx = @mulAdd(f32, -lhs.x, rhs.y, lhs.y * rhs.x),
+        };
+    }
+
+    test outerProd {
+        {
+            const a: Vec3 = .x_pos;
+            const b: Vec3 = .y_pos;
+            try std.testing.expectEqual(Bivec3{ .yx = -1.0, .yz = 0.0, .xz = 0.0 }, a.outerProd(b));
+        }
+
+        {
+            const a: Vec3 = .{ .x = 1, .y = 2, .z = 3 };
+            const b: Vec3 = .{ .x = 1, .y = 5, .z = 7 };
+            try std.testing.expectEqual(Bivec3{ .yz = -1, .xz = 4, .yx = -3 }, a.outerProd(b));
+        }
+    }
+
+    /// Returns the geometric product of two vectors. This is an intermediate step in creating a
+    /// usable rotor, it's more likely that you want `Rotor3.fromTo`.
+    pub fn geomProd(lhs: Vec3, rhs: Vec3) Rotor3 {
+        const outer = lhs.outerProd(rhs);
+        return .{
+            .yz = outer.yz,
+            .xz = outer.xz,
+            .yx = outer.yx,
+            .a = lhs.innerProd(rhs) + 1.0,
+        };
+    }
+
+    test geomProd {
+        try std.testing.expectEqual(Rotor3{
+            .yz = 0.0,
+            .xz = 0.0,
+            .yx = -1.0,
+            .a = 1.0,
+        }, Vec3.x_pos.geomProd(.y_pos));
+        try std.testing.expectEqual(Rotor3{
+            .yz = 0.0,
+            .xz = 1.0,
+            .yx = 0.0,
+            .a = 1.0,
+        }, Vec3.x_pos.geomProd(.z_pos));
+        try std.testing.expectEqual(Rotor3{
+            .yz = 1.0,
+            .xz = 0.0,
+            .yx = 0.0,
+            .a = 1.0,
+        }, Vec3.y_pos.geomProd(.z_pos));
+    }
+
+    /// Returns the equivalent homogeneous point.
+    pub fn point(self: Vec3) Vec4 {
+        return .{ .x = self.x, .y = self.y, .z = self.z, .w = 1.0 };
+    }
+
+    test point {
+        var v: Vec3 = .{ .x = 1, .y = 2, .z = 3 };
+        try std.testing.expectEqual(Vec4{ .x = 1, .y = 2, .z = 3, .w = 1 }, v.point());
+    }
+
+    /// Returns the equivalent homogeneous direction.
+    pub fn dir(self: Vec3) Vec4 {
+        return .{ .x = self.x, .y = self.y, .z = self.z, .w = 0.0 };
+    }
+
+    test dir {
+        var v: Vec3 = .{ .x = 1, .y = 2, .z = 3 };
+        try std.testing.expectEqual(Vec4{ .x = 1, .y = 2, .z = 3, .w = 0 }, v.dir());
     }
 
     /// Returns the x and y components.
@@ -403,6 +503,22 @@ pub const Vec3 = extern struct {
     test xy {
         const a: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
         try std.testing.expectEqual(Vec2{ .x = 2, .y = 3 }, a.xy());
+    }
+
+    pub fn withW(self: Vec3, w: f32) Vec4 {
+        return .{
+            .x = self.x,
+            .y = self.y,
+            .z = self.z,
+            .w = w,
+        };
+    }
+
+    test withW {
+        try std.testing.expectEqual(
+            Vec4{ .x = 1, .y = 2, .z = 3, .w = 4 },
+            (Vec3{ .x = 1, .y = 2, .z = 3 }).withW(4),
+        );
     }
 
     pub fn clamped(self: Vec3, min: Vec3, max: Vec3) @This() {
@@ -459,5 +575,20 @@ pub const Vec3 = extern struct {
             v.clamp(.{ .x = 2, .y = 4, .z = 0 }, .{ .x = 10, .y = 20, .z = 100 });
             try std.testing.expectEqual(Vec3{ .x = 3, .y = 10, .z = 100 }, v);
         }
+    }
+
+    /// Converts a homogeneous `Vec3` into a Cartesian `Vec2` by dividing by `z`.
+    pub fn toCartesian(self: Vec3) Vec2 {
+        return .{
+            .x = self.x / self.z,
+            .y = self.y / self.z,
+        };
+    }
+
+    test toCartesian {
+        try std.testing.expectEqual(
+            Vec2{ .x = 5, .y = 10 },
+            (Vec3{ .x = 10, .y = 20, .z = 2 }).toCartesian(),
+        );
     }
 };
