@@ -13,8 +13,8 @@ pub const Bivec2 = extern struct {
     yx: f32,
 
     pub const zero: Bivec2 = .{ .yx = 0.0 };
-    pub const yx_pos: Bivec2 = .{ .yx = 1.0 };
-    pub const yx_neg: Bivec2 = .{ .yx = -1.0 };
+    pub const yx_plane: Bivec2 = .{ .yx = 1.0 };
+    pub const xy_plane: Bivec2 = .{ .yx = -1.0 };
 
     /// Checks for equality.
     pub fn eql(self: Bivec2, other: Bivec2) bool {
@@ -23,8 +23,8 @@ pub const Bivec2 = extern struct {
 
     test eql {
         try std.testing.expect(Bivec2.zero.eql(Bivec2{ .yx = 0.0 }));
-        try std.testing.expect(!Bivec2.zero.eql(.yx_pos));
-        try std.testing.expect(!Bivec2.zero.eql(.yx_neg));
+        try std.testing.expect(!Bivec2.zero.eql(.yx_plane));
+        try std.testing.expect(!Bivec2.zero.eql(.xy_plane));
     }
 
     /// Returns the bivector scaled by `factor`.
@@ -109,26 +109,26 @@ pub const Bivec2 = extern struct {
 
     test exp {
         // Test 0 degree rotations
-        try testExpVsAngle(yx_pos, 0.0);
-        try testExpVsAngle(yx_neg, 0.0);
+        try testExpVsAngle(yx_plane, 0.0);
+        try testExpVsAngle(xy_plane, 0.0);
 
         // Test 90 degree rotations
-        try testExpVsAngle(yx_pos, -math.pi / 2.0);
-        try testExpVsAngle(yx_pos, math.pi / 2.0);
-        try testExpVsAngle(yx_neg, -math.pi / 2.0);
-        try testExpVsAngle(yx_neg, math.pi / 2.0);
+        try testExpVsAngle(yx_plane, -math.pi / 2.0);
+        try testExpVsAngle(yx_plane, math.pi / 2.0);
+        try testExpVsAngle(xy_plane, -math.pi / 2.0);
+        try testExpVsAngle(xy_plane, math.pi / 2.0);
 
         // Test 180 degree rotations
-        try testExpVsAngle(yx_pos, -math.pi);
-        try testExpVsAngle(yx_pos, math.pi);
-        try testExpVsAngle(yx_neg, -math.pi);
-        try testExpVsAngle(yx_neg, math.pi);
+        try testExpVsAngle(yx_plane, -math.pi);
+        try testExpVsAngle(yx_plane, math.pi);
+        try testExpVsAngle(xy_plane, -math.pi);
+        try testExpVsAngle(xy_plane, math.pi);
 
         // Test 360 degree rotations
-        try testExpVsAngle(yx_pos, -2.0 * math.pi);
-        try testExpVsAngle(yx_pos, 2.0 * math.pi);
-        try testExpVsAngle(yx_neg, -2.0 * math.pi);
-        try testExpVsAngle(yx_neg, 2.0 * math.pi);
+        try testExpVsAngle(yx_plane, -2.0 * math.pi);
+        try testExpVsAngle(yx_plane, 2.0 * math.pi);
+        try testExpVsAngle(xy_plane, -2.0 * math.pi);
+        try testExpVsAngle(xy_plane, 2.0 * math.pi);
     }
 };
 

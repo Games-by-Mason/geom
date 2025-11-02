@@ -16,12 +16,12 @@ pub const Bivec3 = extern struct {
     yx: f32,
 
     pub const zero: Bivec3 = .{ .yz = 0.0, .xz = 0.0, .yx = 0.0 };
-    pub const yz_pos: Bivec3 = .{ .yz = 1.0, .xz = 0.0, .yx = 0.0 };
-    pub const yz_neg: Bivec3 = .{ .yz = -1.0, .xz = 0.0, .yx = 0.0 };
-    pub const xz_pos: Bivec3 = .{ .yz = 0.0, .xz = 1.0, .yx = 0.0 };
-    pub const xz_neg: Bivec3 = .{ .yz = 0.0, .xz = -1.0, .yx = 0.0 };
-    pub const yx_pos: Bivec3 = .{ .yz = 0.0, .xz = 0.0, .yx = 1.0 };
-    pub const yx_neg: Bivec3 = .{ .yz = 0.0, .xz = 0.0, .yx = -1.0 };
+    pub const yz_plane: Bivec3 = .{ .yz = 1.0, .xz = 0.0, .yx = 0.0 };
+    pub const zy_plane: Bivec3 = .{ .yz = -1.0, .xz = 0.0, .yx = 0.0 };
+    pub const xz_plane: Bivec3 = .{ .yz = 0.0, .xz = 1.0, .yx = 0.0 };
+    pub const zx_plane: Bivec3 = .{ .yz = 0.0, .xz = -1.0, .yx = 0.0 };
+    pub const yx_plane: Bivec3 = .{ .yz = 0.0, .xz = 0.0, .yx = 1.0 };
+    pub const xy_plane: Bivec3 = .{ .yz = 0.0, .xz = 0.0, .yx = -1.0 };
 
     /// Checks for equality.
     pub fn eql(self: Bivec3, other: Bivec3) bool {
@@ -30,12 +30,12 @@ pub const Bivec3 = extern struct {
 
     test eql {
         try std.testing.expect(Bivec3.zero.eql(.zero));
-        try std.testing.expect(!Bivec3.zero.eql(.yz_pos));
-        try std.testing.expect(!Bivec3.zero.eql(.yz_neg));
-        try std.testing.expect(!Bivec3.zero.eql(.xz_pos));
-        try std.testing.expect(!Bivec3.zero.eql(.xz_neg));
-        try std.testing.expect(!Bivec3.zero.eql(.yx_pos));
-        try std.testing.expect(!Bivec3.zero.eql(.yx_neg));
+        try std.testing.expect(!Bivec3.zero.eql(.yz_plane));
+        try std.testing.expect(!Bivec3.zero.eql(.zy_plane));
+        try std.testing.expect(!Bivec3.zero.eql(.xz_plane));
+        try std.testing.expect(!Bivec3.zero.eql(.zx_plane));
+        try std.testing.expect(!Bivec3.zero.eql(.yx_plane));
+        try std.testing.expect(!Bivec3.zero.eql(.xy_plane));
     }
 
     /// Returns the bivector scaled by `factor`.
@@ -168,60 +168,60 @@ pub const Bivec3 = extern struct {
 
     test exp {
         // Test 0 degree rotations
-        try testExpVsPlaneAngle(yz_neg, 0.0);
-        try testExpVsPlaneAngle(yz_pos, 0.0);
-        try testExpVsPlaneAngle(xz_neg, 0.0);
-        try testExpVsPlaneAngle(xz_pos, 0.0);
-        try testExpVsPlaneAngle(yx_neg, 0.0);
-        try testExpVsPlaneAngle(yx_pos, 0.0);
+        try testExpVsPlaneAngle(zy_plane, 0.0);
+        try testExpVsPlaneAngle(yz_plane, 0.0);
+        try testExpVsPlaneAngle(zx_plane, 0.0);
+        try testExpVsPlaneAngle(xz_plane, 0.0);
+        try testExpVsPlaneAngle(xy_plane, 0.0);
+        try testExpVsPlaneAngle(yx_plane, 0.0);
 
         // Test 90 degree rotations
-        try testExpVsPlaneAngle(yz_pos, math.pi / 2.0);
-        try testExpVsPlaneAngle(yz_pos, -math.pi / 2.0);
-        try testExpVsPlaneAngle(yz_neg, math.pi / 2.0);
-        try testExpVsPlaneAngle(yz_neg, -math.pi / 2.0);
+        try testExpVsPlaneAngle(yz_plane, math.pi / 2.0);
+        try testExpVsPlaneAngle(yz_plane, -math.pi / 2.0);
+        try testExpVsPlaneAngle(zy_plane, math.pi / 2.0);
+        try testExpVsPlaneAngle(zy_plane, -math.pi / 2.0);
 
-        try testExpVsPlaneAngle(xz_pos, math.pi / 2.0);
-        try testExpVsPlaneAngle(xz_pos, -math.pi / 2.0);
-        try testExpVsPlaneAngle(xz_neg, math.pi / 2.0);
-        try testExpVsPlaneAngle(xz_neg, -math.pi / 2.0);
+        try testExpVsPlaneAngle(xz_plane, math.pi / 2.0);
+        try testExpVsPlaneAngle(xz_plane, -math.pi / 2.0);
+        try testExpVsPlaneAngle(zx_plane, math.pi / 2.0);
+        try testExpVsPlaneAngle(zx_plane, -math.pi / 2.0);
 
-        try testExpVsPlaneAngle(yx_pos, math.pi / 2.0);
-        try testExpVsPlaneAngle(yx_pos, -math.pi / 2.0);
-        try testExpVsPlaneAngle(yx_neg, math.pi / 2.0);
-        try testExpVsPlaneAngle(yx_neg, -math.pi / 2.0);
+        try testExpVsPlaneAngle(yx_plane, math.pi / 2.0);
+        try testExpVsPlaneAngle(yx_plane, -math.pi / 2.0);
+        try testExpVsPlaneAngle(xy_plane, math.pi / 2.0);
+        try testExpVsPlaneAngle(xy_plane, -math.pi / 2.0);
 
         // Test 180 degree rotations
-        try testExpVsPlaneAngle(yz_pos, math.pi);
-        try testExpVsPlaneAngle(yz_pos, -math.pi);
-        try testExpVsPlaneAngle(yz_neg, math.pi);
-        try testExpVsPlaneAngle(yz_neg, -math.pi);
+        try testExpVsPlaneAngle(yz_plane, math.pi);
+        try testExpVsPlaneAngle(yz_plane, -math.pi);
+        try testExpVsPlaneAngle(zy_plane, math.pi);
+        try testExpVsPlaneAngle(zy_plane, -math.pi);
 
-        try testExpVsPlaneAngle(xz_pos, math.pi);
-        try testExpVsPlaneAngle(xz_pos, -math.pi);
-        try testExpVsPlaneAngle(xz_neg, math.pi);
-        try testExpVsPlaneAngle(xz_neg, -math.pi);
+        try testExpVsPlaneAngle(xz_plane, math.pi);
+        try testExpVsPlaneAngle(xz_plane, -math.pi);
+        try testExpVsPlaneAngle(zx_plane, math.pi);
+        try testExpVsPlaneAngle(zx_plane, -math.pi);
 
-        try testExpVsPlaneAngle(yx_pos, math.pi);
-        try testExpVsPlaneAngle(yx_pos, -math.pi);
-        try testExpVsPlaneAngle(yx_neg, math.pi);
-        try testExpVsPlaneAngle(yx_neg, -math.pi);
+        try testExpVsPlaneAngle(yx_plane, math.pi);
+        try testExpVsPlaneAngle(yx_plane, -math.pi);
+        try testExpVsPlaneAngle(xy_plane, math.pi);
+        try testExpVsPlaneAngle(xy_plane, -math.pi);
 
         // Test 360 degree rotations
-        try testExpVsPlaneAngle(yz_pos, 2.0 * math.pi);
-        try testExpVsPlaneAngle(yz_pos, -2.0 * math.pi);
-        try testExpVsPlaneAngle(yz_neg, 2.0 * math.pi);
-        try testExpVsPlaneAngle(yz_neg, -2.0 * math.pi);
+        try testExpVsPlaneAngle(yz_plane, 2.0 * math.pi);
+        try testExpVsPlaneAngle(yz_plane, -2.0 * math.pi);
+        try testExpVsPlaneAngle(zy_plane, 2.0 * math.pi);
+        try testExpVsPlaneAngle(zy_plane, -2.0 * math.pi);
 
-        try testExpVsPlaneAngle(xz_pos, 2.0 * math.pi);
-        try testExpVsPlaneAngle(xz_pos, -2.0 * math.pi);
-        try testExpVsPlaneAngle(xz_neg, 2.0 * math.pi);
-        try testExpVsPlaneAngle(xz_neg, -2.0 * math.pi);
+        try testExpVsPlaneAngle(xz_plane, 2.0 * math.pi);
+        try testExpVsPlaneAngle(xz_plane, -2.0 * math.pi);
+        try testExpVsPlaneAngle(zx_plane, 2.0 * math.pi);
+        try testExpVsPlaneAngle(zx_plane, -2.0 * math.pi);
 
-        try testExpVsPlaneAngle(yx_pos, 2.0 * math.pi);
-        try testExpVsPlaneAngle(yx_pos, -2.0 * math.pi);
-        try testExpVsPlaneAngle(yx_neg, 2.0 * math.pi);
-        try testExpVsPlaneAngle(yx_neg, -2.0 * math.pi);
+        try testExpVsPlaneAngle(yx_plane, 2.0 * math.pi);
+        try testExpVsPlaneAngle(yx_plane, -2.0 * math.pi);
+        try testExpVsPlaneAngle(xy_plane, 2.0 * math.pi);
+        try testExpVsPlaneAngle(xy_plane, -2.0 * math.pi);
     }
 };
 

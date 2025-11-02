@@ -393,7 +393,7 @@ pub const Mat4 = extern struct {
     test "rotatedTranslatedScaled" {
         var m = Mat4.identity;
         m = m.translated(.y_pos);
-        m = m.rotated(.fromPlaneAngle(.yx_pos, std.math.pi));
+        m = m.rotated(.fromPlaneAngle(.yx_plane, std.math.pi));
         m = m.scaled(.splat(0.5));
         m = m.translated(.{ .x = 0.0, .y = 0.5, .z = 0.0 });
         try expectVec3ApproxEql(.{ .x = 0.0, .y = 0.0, .z = 0.0 }, m.timesPoint(.zero));
@@ -576,6 +576,7 @@ pub const Mat4 = extern struct {
         try expectVec3ApproxEql(Vec3{ .x = 0.5, .y = 0.0, .z = 0.0 }, m.timesDir(.y_pos));
     }
 
+    // XXX: we use it though, e.g. in getWorldPos
     /// Gets the translation of the matrix. Useful for human readable output, use for computation is
     /// discouraged.
     pub fn getTranslation(self: @This()) Vec3 {

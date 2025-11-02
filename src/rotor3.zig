@@ -198,78 +198,78 @@ pub const Rotor3 = extern struct {
 
     test fromPlaneAngle {
         // Test rotating 0 degrees
-        try std.testing.expectEqual(Vec3.x_pos, Rotor3.fromPlaneAngle(.yx_pos, 0).timesVec3(.x_pos));
-        try std.testing.expectEqual(Vec3.x_neg, Rotor3.fromPlaneAngle(.yx_neg, 0).timesVec3(.x_neg));
-        try std.testing.expectEqual(Vec3.y_pos, Rotor3.fromPlaneAngle(.yz_pos, 0).timesVec3(.y_pos));
-        try std.testing.expectEqual(Vec3.y_neg, Rotor3.fromPlaneAngle(.yz_neg, 0).timesVec3(.y_neg));
-        try std.testing.expectEqual(Vec3.z_neg, Rotor3.fromPlaneAngle(.xz_pos, 0).timesVec3(.z_neg));
-        try std.testing.expectEqual(Vec3.z_pos, Rotor3.fromPlaneAngle(.xz_neg, 0).timesVec3(.z_pos));
+        try std.testing.expectEqual(Vec3.x_pos, Rotor3.fromPlaneAngle(.yx_plane, 0).timesVec3(.x_pos));
+        try std.testing.expectEqual(Vec3.x_neg, Rotor3.fromPlaneAngle(.xy_plane, 0).timesVec3(.x_neg));
+        try std.testing.expectEqual(Vec3.y_pos, Rotor3.fromPlaneAngle(.yz_plane, 0).timesVec3(.y_pos));
+        try std.testing.expectEqual(Vec3.y_neg, Rotor3.fromPlaneAngle(.zy_plane, 0).timesVec3(.y_neg));
+        try std.testing.expectEqual(Vec3.z_neg, Rotor3.fromPlaneAngle(.xz_plane, 0).timesVec3(.z_neg));
+        try std.testing.expectEqual(Vec3.z_pos, Rotor3.fromPlaneAngle(.zx_plane, 0).timesVec3(.z_pos));
 
         // Test rotating 90 degrees
-        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yx_pos, math.pi / 2.0).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yx_pos, -math.pi / 2.0).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yx_pos, math.pi / 2.0).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yx_pos, -math.pi / 2.0).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_pos, math.pi / 2.0).timesVec3(.z_pos));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_pos, -math.pi / 2.0).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yx_plane, math.pi / 2.0).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yx_plane, -math.pi / 2.0).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yx_plane, math.pi / 2.0).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yx_plane, -math.pi / 2.0).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_plane, math.pi / 2.0).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_plane, -math.pi / 2.0).timesVec3(.z_pos));
 
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.xz_neg, -math.pi / 2.0).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.xz_neg, math.pi / 2.0).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.xz_neg, -math.pi / 2.0).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.xz_neg, math.pi / 2.0).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.xz_neg, -math.pi / 2.0).timesVec3(.z_pos));
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.xz_neg, math.pi / 2.0).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.zx_plane, -math.pi / 2.0).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.zx_plane, math.pi / 2.0).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.zx_plane, -math.pi / 2.0).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.zx_plane, math.pi / 2.0).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.zx_plane, -math.pi / 2.0).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.zx_plane, math.pi / 2.0).timesVec3(.z_pos));
 
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yz_pos, math.pi / 2.0).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yz_pos, -math.pi / 2.0).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yz_pos, math.pi / 2.0).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.yz_pos, -math.pi / 2.0).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yz_pos, math.pi / 2.0).timesVec3(.z_pos));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yz_pos, -math.pi / 2.0).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yz_plane, math.pi / 2.0).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yz_plane, -math.pi / 2.0).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yz_plane, math.pi / 2.0).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.yz_plane, -math.pi / 2.0).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yz_plane, math.pi / 2.0).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yz_plane, -math.pi / 2.0).timesVec3(.z_pos));
 
         // Test rotating 180 degrees
-        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yx_pos, math.pi).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yx_pos, math.pi).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_pos, math.pi).timesVec3(.z_pos));
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yx_pos, math.pi).timesVec3(.x_neg));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yx_pos, math.pi).timesVec3(.y_neg));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_pos, math.pi).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yx_plane, math.pi).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yx_plane, math.pi).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_plane, math.pi).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yx_plane, math.pi).timesVec3(.x_neg));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yx_plane, math.pi).timesVec3(.y_neg));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_plane, math.pi).timesVec3(.z_pos));
 
-        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.xz_pos, -math.pi).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.xz_pos, -math.pi).timesVec3(.x_neg));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.xz_pos, -math.pi).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.xz_pos, -math.pi).timesVec3(.y_neg));
-        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.xz_pos, -math.pi).timesVec3(.z_pos));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.xz_pos, -math.pi).timesVec3(.z_neg));
+        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.xz_plane, -math.pi).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.xz_plane, -math.pi).timesVec3(.x_neg));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.xz_plane, -math.pi).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.xz_plane, -math.pi).timesVec3(.y_neg));
+        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.xz_plane, -math.pi).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.xz_plane, -math.pi).timesVec3(.z_neg));
 
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yz_pos, math.pi).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yz_pos, math.pi).timesVec3(.x_neg));
-        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yz_pos, math.pi).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yz_pos, math.pi).timesVec3(.y_neg));
-        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.yz_pos, math.pi).timesVec3(.z_pos));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yz_pos, math.pi).timesVec3(.z_neg));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yz_plane, math.pi).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yz_plane, math.pi).timesVec3(.x_neg));
+        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yz_plane, math.pi).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yz_plane, math.pi).timesVec3(.y_neg));
+        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.yz_plane, math.pi).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yz_plane, math.pi).timesVec3(.z_neg));
 
         // Test rotating 360 degrees
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yx_pos, 2.0 * math.pi).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yx_pos, 2.0 * math.pi).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yx_pos, 2.0 * math.pi).timesVec3(.x_neg));
-        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yx_pos, 2.0 * math.pi).timesVec3(.y_neg));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_pos, 2.0 * math.pi).timesVec3(.z_pos));
-        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.yx_pos, 2.0 * math.pi).timesVec3(.z_neg));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yx_plane, 2.0 * math.pi).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yx_plane, 2.0 * math.pi).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yx_plane, 2.0 * math.pi).timesVec3(.x_neg));
+        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yx_plane, 2.0 * math.pi).timesVec3(.y_neg));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yx_plane, 2.0 * math.pi).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.yx_plane, 2.0 * math.pi).timesVec3(.z_neg));
 
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.xz_neg, 2.0 * math.pi).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.xz_neg, 2.0 * math.pi).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.xz_neg, 2.0 * math.pi).timesVec3(.x_neg));
-        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.xz_neg, 2.0 * math.pi).timesVec3(.y_neg));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.xz_neg, 2.0 * math.pi).timesVec3(.z_pos));
-        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.xz_neg, 2.0 * math.pi).timesVec3(.z_neg));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.zx_plane, 2.0 * math.pi).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.zx_plane, 2.0 * math.pi).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.zx_plane, 2.0 * math.pi).timesVec3(.x_neg));
+        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.zx_plane, 2.0 * math.pi).timesVec3(.y_neg));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.zx_plane, 2.0 * math.pi).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.zx_plane, 2.0 * math.pi).timesVec3(.z_neg));
 
-        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yz_pos, 2.0 * math.pi).timesVec3(.x_pos));
-        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yz_pos, 2.0 * math.pi).timesVec3(.y_pos));
-        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yz_pos, 2.0 * math.pi).timesVec3(.x_neg));
-        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yz_pos, 2.0 * math.pi).timesVec3(.y_neg));
-        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yz_pos, 2.0 * math.pi).timesVec3(.z_pos));
-        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.yz_pos, 2.0 * math.pi).timesVec3(.z_neg));
+        try expectVec3ApproxEql(Vec3.x_pos, Rotor3.fromPlaneAngle(.yz_plane, 2.0 * math.pi).timesVec3(.x_pos));
+        try expectVec3ApproxEql(Vec3.y_pos, Rotor3.fromPlaneAngle(.yz_plane, 2.0 * math.pi).timesVec3(.y_pos));
+        try expectVec3ApproxEql(Vec3.x_neg, Rotor3.fromPlaneAngle(.yz_plane, 2.0 * math.pi).timesVec3(.x_neg));
+        try expectVec3ApproxEql(Vec3.y_neg, Rotor3.fromPlaneAngle(.yz_plane, 2.0 * math.pi).timesVec3(.y_neg));
+        try expectVec3ApproxEql(Vec3.z_pos, Rotor3.fromPlaneAngle(.yz_plane, 2.0 * math.pi).timesVec3(.z_pos));
+        try expectVec3ApproxEql(Vec3.z_neg, Rotor3.fromPlaneAngle(.yz_plane, 2.0 * math.pi).timesVec3(.z_neg));
     }
 
     /// Returns the squared magnitude of the rotor.
@@ -750,22 +750,22 @@ fn testInterpolation(large_angles: bool, interp: *const fn (Rotor3, Rotor3, f32)
     const pi = std.math.pi;
 
     const r_0: Rotor3 = .identity;
-    const r_yx180: Rotor3 = .fromPlaneAngle(.yx_pos, pi);
+    const r_yx180: Rotor3 = .fromPlaneAngle(.yx_plane, pi);
 
-    const r_xy90: Rotor3 = .fromPlaneAngle(.yx_pos, -pi / 4.0);
-    const r_yx90: Rotor3 = .fromPlaneAngle(.yx_pos, pi / 4.0);
-    const r_xy270: Rotor3 = .fromPlaneAngle(.yx_pos, -3.0 * pi / 4.0);
-    const r_xy45: Rotor3 = .fromPlaneAngle(.yx_pos, -pi / 8.0);
+    const r_xy90: Rotor3 = .fromPlaneAngle(.yx_plane, -pi / 4.0);
+    const r_yx90: Rotor3 = .fromPlaneAngle(.yx_plane, pi / 4.0);
+    const r_xy270: Rotor3 = .fromPlaneAngle(.yx_plane, -3.0 * pi / 4.0);
+    const r_xy45: Rotor3 = .fromPlaneAngle(.yx_plane, -pi / 8.0);
 
-    const r_zx90: Rotor3 = .fromPlaneAngle(.xz_pos, -pi / 4.0);
-    const r_xz90: Rotor3 = .fromPlaneAngle(.xz_pos, pi / 4.0);
-    const r_zx270: Rotor3 = .fromPlaneAngle(.xz_pos, -3.0 * pi / 4.0);
-    const r_zx45: Rotor3 = .fromPlaneAngle(.xz_pos, -pi / 8.0);
+    const r_zx90: Rotor3 = .fromPlaneAngle(.xz_plane, -pi / 4.0);
+    const r_xz90: Rotor3 = .fromPlaneAngle(.xz_plane, pi / 4.0);
+    const r_zx270: Rotor3 = .fromPlaneAngle(.xz_plane, -3.0 * pi / 4.0);
+    const r_zx45: Rotor3 = .fromPlaneAngle(.xz_plane, -pi / 8.0);
 
-    const r_zy90: Rotor3 = .fromPlaneAngle(.yz_pos, -pi / 4.0);
-    const r_yz90: Rotor3 = .fromPlaneAngle(.yz_pos, pi / 4.0);
-    const r_zy270: Rotor3 = .fromPlaneAngle(.yz_pos, -3.0 * pi / 4.0);
-    const r_zy45: Rotor3 = .fromPlaneAngle(.yz_pos, -pi / 8.0);
+    const r_zy90: Rotor3 = .fromPlaneAngle(.yz_plane, -pi / 4.0);
+    const r_yz90: Rotor3 = .fromPlaneAngle(.yz_plane, pi / 4.0);
+    const r_zy270: Rotor3 = .fromPlaneAngle(.yz_plane, -3.0 * pi / 4.0);
+    const r_zy45: Rotor3 = .fromPlaneAngle(.yz_plane, -pi / 8.0);
 
     // Test interpolating between identical rotors
     try std.testing.expectEqual(r_0, interp(r_0, r_0, 0.0));

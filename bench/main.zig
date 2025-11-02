@@ -22,7 +22,7 @@ pub fn main() !void {
         std.debug.print("{} -> {}\n", .{ r, r.mag() });
     }
     {
-        var r: Rotor3 = .fromPlaneAngle(.yx_pos, std.math.pi / 3.0);
+        var r: Rotor3 = .fromPlaneAngle(.yx_plane, std.math.pi / 3.0);
         std.debug.print("r3 times: {} -> {}\n", .{ r, r.mag() });
         var timer = try std.time.Timer.start();
         for (0..100_000_000) |_| {
@@ -112,7 +112,7 @@ pub fn main() !void {
         std.debug.print("{}\n", .{p});
     }
     {
-        var m: Mat3x4 = .rotation(.fromPlaneAngle(.yx_pos, std.math.pi / 3.0));
+        var m: Mat3x4 = .rotation(.fromPlaneAngle(.yx_plane, std.math.pi / 3.0));
         var p: Vec3 = .y_pos;
         var timer = try std.time.Timer.start();
         for (0..100_000_000) |_| {
@@ -122,7 +122,7 @@ pub fn main() !void {
         std.debug.print("{}\n", .{p});
     }
     {
-        var m: Mat3x4 = .rotation(.fromPlaneAngle(.yx_pos, std.math.pi / 3.0));
+        var m: Mat3x4 = .rotation(.fromPlaneAngle(.yx_plane, std.math.pi / 3.0));
         var p: Vec4 = .y_pos;
         var timer = try std.time.Timer.start();
         for (0..100_000_000) |_| {
@@ -133,7 +133,7 @@ pub fn main() !void {
     }
     {
         var m: Mat3x4 = .identity;
-        const m2: Mat3x4 = .rotation(.fromPlaneAngle(.yx_pos, std.math.pi / 3.0));
+        const m2: Mat3x4 = .rotation(.fromPlaneAngle(.yx_plane, std.math.pi / 3.0));
         var timer = try std.time.Timer.start();
         for (0..100_000_000) |_| {
             m.apply(m2);
@@ -142,7 +142,7 @@ pub fn main() !void {
         std.debug.print("{}\n", .{m});
     }
     {
-        var m: Mat3x4 = .rotation(.fromPlaneAngle(.yx_pos, std.math.pi / 3.0));
+        var m: Mat3x4 = .rotation(.fromPlaneAngle(.yx_plane, std.math.pi / 3.0));
         var p: Vec3 = .y_pos;
         var timer = try std.time.Timer.start();
         for (0..100_000_000) |_| {
@@ -152,7 +152,7 @@ pub fn main() !void {
         std.debug.print("{}\n", .{p});
     }
     {
-        var m: Mat4 = .rotation(.fromPlaneAngle(.yx_pos, std.math.pi / 3.0));
+        var m: Mat4 = .rotation(.fromPlaneAngle(.yx_plane, std.math.pi / 3.0));
         var p: Vec3 = .y_pos;
         var timer = try std.time.Timer.start();
         for (0..100_000_000) |_| {
@@ -162,7 +162,7 @@ pub fn main() !void {
         std.debug.print("{}\n", .{p});
     }
     {
-        var m: Mat4 = .rotation(.fromPlaneAngle(.yx_pos, std.math.pi / 3.0));
+        var m: Mat4 = .rotation(.fromPlaneAngle(.yx_plane, std.math.pi / 3.0));
         var p: Vec4 = .y_pos;
         var timer = try std.time.Timer.start();
         for (0..100_000_000) |_| {
@@ -173,7 +173,7 @@ pub fn main() !void {
     }
     {
         var m: Mat4 = .identity;
-        const m2: Mat4 = .rotation(.fromPlaneAngle(.yx_pos, std.math.pi / 3.0));
+        const m2: Mat4 = .rotation(.fromPlaneAngle(.yx_plane, std.math.pi / 3.0));
         var timer = try std.time.Timer.start();
         for (0..100_000_000) |_| {
             m.apply(m2);
@@ -182,7 +182,7 @@ pub fn main() !void {
         std.debug.print("{}\n", .{m});
     }
     {
-        var m: Mat4 = .rotation(.fromPlaneAngle(.yx_pos, std.math.pi / 3.0));
+        var m: Mat4 = .rotation(.fromPlaneAngle(.yx_plane, std.math.pi / 3.0));
         var p: Vec3 = .y_pos;
         var timer = try std.time.Timer.start();
         for (0..100_000_000) |_| {

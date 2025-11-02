@@ -328,7 +328,7 @@ pub const Mat3x4 = extern struct {
     test "rotatedTranslatedScaled" {
         var m = Mat3x4.identity;
         m = m.translated(.y_pos);
-        m = m.rotated(.fromPlaneAngle(.yx_pos, std.math.pi));
+        m = m.rotated(.fromPlaneAngle(.yx_plane, std.math.pi));
         m = m.scaled(.splat(0.5));
         m = m.translated(.{ .x = 0.0, .y = 0.5, .z = 0.0 });
         try expectVec3ApproxEql(.{ .x = 0.0, .y = 0.0, .z = 0.0 }, m.timesPoint(.zero));
