@@ -455,15 +455,66 @@ pub const Mat2x3 = extern struct {
             Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesVec3(.x_pos),
         );
     }
+
+    /// Returns the transpose of the matrix, assuming the missing row is `Mat3.identity.r2`. For
+    /// pure rotation matrices, the transpose is equivalent to the inverse.
+    pub fn transposed(self: @This()) Mat2x3 {
+        return .{
+            .r0 = .{ .x = self.r0.x, .y = self.r1.x, .z = 0 },
+            .r1 = .{ .x = self.r0.y, .y = self.r1.y, .z = 0 },
+        };
+    }
+
+    test transposed {
+        const m: Mat2x3 = .{
+            .r0 = .{ .x = 1, .y = 2, .z = 3 },
+            .r1 = .{ .x = 4, .y = 5, .z = 6 },
+        };
+        const t: Mat2x3 = .{
+            .r0 = .{ .x = 1, .y = 4, .z = 0 },
+            .r1 = .{ .x = 2, .y = 5, .z = 0 },
+        };
+        try std.testing.expectEqual(t, m.transposed());
+
+        const r = rotation(.fromTo(
+            .{ .x = 1, .y = 2 },
+            .{ .x = 3, .y = 4 },
+        ));
+        try expectMat2x3ApproxEq(identity, r.times(r.transposed()));
+    }
+
+    /// Transposes the matrix, assuming the missing row is `Mat3.identity.r3`. For pure rotation
+    /// matrices, the transpose is equivalent to the inverse.
+    pub fn transpose(self: *@This()) void {
+        self.* = self.transposed();
+    }
+
+    test transpose {
+        var m: Mat2x3 = .{
+            .r0 = .{ .x = 1, .y = 2, .z = 3 },
+            .r1 = .{ .x = 4, .y = 5, .z = 6 },
+        };
+        m.transpose();
+        const t: Mat2x3 = .{
+            .r0 = .{ .x = 1, .y = 4, .z = 0 },
+            .r1 = .{ .x = 2, .y = 5, .z = 0 },
+        };
+        try std.testing.expectEqual(t, m);
+    }
 };
 
+fn expectMat2x3ApproxEq(lhs: Mat2x3, rhs: Mat2x3) !void {
+    try expectVec3ApproxEql(lhs.r0, rhs.r0);
+    try expectVec3ApproxEql(lhs.r1, rhs.r1);
+}
+
 fn expectVec2ApproxEql(expected: Vec2, actual: Vec2) !void {
-    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.01);
-    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.01);
+    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
 }
 
 fn expectVec3ApproxEql(expected: Vec3, actual: Vec3) !void {
-    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.01);
-    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.01);
-    try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.01);
+    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.0001);
 }

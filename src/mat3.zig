@@ -508,15 +508,72 @@ pub const Mat3 = extern struct {
             Mat3.rotation(.fromTo(.x_pos, .y_pos)).timesVec3(.x_pos),
         );
     }
+
+    /// Returns the transpose of the matrix. For pure rotation matrices, the transpose is equivalent
+    /// to the inverse.
+    pub fn transposed(self: @This()) Mat3 {
+        return .{
+            .r0 = .{ .x = self.r0.x, .y = self.r1.x, .z = self.r2.x },
+            .r1 = .{ .x = self.r0.y, .y = self.r1.y, .z = self.r2.y },
+            .r2 = .{ .x = self.r0.z, .y = self.r1.z, .z = self.r2.z },
+        };
+    }
+
+    test transposed {
+        const m: Mat3 = .{
+            .r0 = .{ .x = 1, .y = 2, .z = 3 },
+            .r1 = .{ .x = 4, .y = 5, .z = 6 },
+            .r2 = .{ .x = 7, .y = 8, .z = 9 },
+        };
+        const t: Mat3 = .{
+            .r0 = .{ .x = 1, .y = 4, .z = 7 },
+            .r1 = .{ .x = 2, .y = 5, .z = 8 },
+            .r2 = .{ .x = 3, .y = 6, .z = 9 },
+        };
+        try std.testing.expectEqual(t, m.transposed());
+
+        const r = rotation(.fromTo(
+            .{ .x = 1, .y = 2 },
+            .{ .x = 3, .y = 4 },
+        ));
+        try expectMat3ApproxEq(identity, r.times(r.transposed()));
+    }
+
+    /// Transposes the matrix. For pure rotation matrices, the transpose is equivalent to the
+    /// inverse.
+    pub fn transpose(self: *@This()) void {
+        self.* = self.transposed();
+    }
+
+    test transpose {
+        var m: Mat3 = .{
+            .r0 = .{ .x = 1, .y = 2, .z = 3 },
+            .r1 = .{ .x = 4, .y = 5, .z = 6 },
+            .r2 = .{ .x = 7, .y = 8, .z = 9 },
+        };
+        m.transpose();
+        const t: Mat3 = .{
+            .r0 = .{ .x = 1, .y = 4, .z = 7 },
+            .r1 = .{ .x = 2, .y = 5, .z = 8 },
+            .r2 = .{ .x = 3, .y = 6, .z = 9 },
+        };
+        try std.testing.expectEqual(m, t);
+    }
 };
 
+fn expectMat3ApproxEq(lhs: Mat3, rhs: Mat3) !void {
+    try expectVec3ApproxEql(lhs.r0, rhs.r0);
+    try expectVec3ApproxEql(lhs.r1, rhs.r1);
+    try expectVec3ApproxEql(lhs.r2, rhs.r2);
+}
+
 fn expectVec2ApproxEql(expected: Vec2, actual: Vec2) !void {
-    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.01);
-    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.01);
+    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
 }
 
 fn expectVec3ApproxEql(expected: Vec3, actual: Vec3) !void {
-    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.01);
-    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.01);
-    try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.01);
+    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.0001);
 }

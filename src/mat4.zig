@@ -634,17 +634,80 @@ pub const Mat4 = extern struct {
             Mat4.rotation(.fromTo(.x_pos, .y_pos)).timesVec4(.x_pos),
         );
     }
+
+    /// Returns the transpose of the matrix. For pure rotation matrices, the transpose is equivalent
+    /// to the inverse.
+    pub fn transposed(self: @This()) Mat4 {
+        return .{
+            .r0 = .{ .x = self.r0.x, .y = self.r1.x, .z = self.r2.x, .w = self.r3.x },
+            .r1 = .{ .x = self.r0.y, .y = self.r1.y, .z = self.r2.y, .w = self.r3.y },
+            .r2 = .{ .x = self.r0.z, .y = self.r1.z, .z = self.r2.z, .w = self.r3.z },
+            .r3 = .{ .x = self.r0.w, .y = self.r1.w, .z = self.r2.w, .w = self.r3.w },
+        };
+    }
+
+    test transposed {
+        const m: Mat4 = .{
+            .r0 = .{ .x = 1, .y = 2, .z = 3, .w = 4 },
+            .r1 = .{ .x = 5, .y = 6, .z = 7, .w = 8 },
+            .r2 = .{ .x = 9, .y = 10, .z = 11, .w = 12 },
+            .r3 = .{ .x = 13, .y = 14, .z = 15, .w = 16 },
+        };
+        const t: Mat4 = .{
+            .r0 = .{ .x = 1, .y = 5, .z = 9, .w = 13 },
+            .r1 = .{ .x = 2, .y = 6, .z = 10, .w = 14 },
+            .r2 = .{ .x = 3, .y = 7, .z = 11, .w = 15 },
+            .r3 = .{ .x = 4, .y = 8, .z = 12, .w = 16 },
+        };
+        try std.testing.expectEqual(t, m.transposed());
+
+        const r = rotation(.fromTo(
+            .{ .x = 1, .y = 2, .z = 3 },
+            .{ .x = 4, .y = 5, .z = 6 },
+        ));
+        try expectMat4ApproxEq(identity, r.times(r.transposed()));
+    }
+
+    /// Transposes the matrix. For pure rotation matrices, the transpose is equivalent to the
+    /// inverse.
+    pub fn transpose(self: *@This()) void {
+        self.* = self.transposed();
+    }
+
+    test transpose {
+        var m: Mat4 = .{
+            .r0 = .{ .x = 1, .y = 2, .z = 3, .w = 4 },
+            .r1 = .{ .x = 5, .y = 6, .z = 7, .w = 8 },
+            .r2 = .{ .x = 9, .y = 10, .z = 11, .w = 12 },
+            .r3 = .{ .x = 13, .y = 14, .z = 15, .w = 16 },
+        };
+        m.transpose();
+        const t: Mat4 = .{
+            .r0 = .{ .x = 1, .y = 5, .z = 9, .w = 13 },
+            .r1 = .{ .x = 2, .y = 6, .z = 10, .w = 14 },
+            .r2 = .{ .x = 3, .y = 7, .z = 11, .w = 15 },
+            .r3 = .{ .x = 4, .y = 8, .z = 12, .w = 16 },
+        };
+        try std.testing.expectEqual(m, t);
+    }
 };
 
+fn expectMat4ApproxEq(lhs: Mat4, rhs: Mat4) !void {
+    try expectVec4ApproxEql(lhs.r0, rhs.r0);
+    try expectVec4ApproxEql(lhs.r1, rhs.r1);
+    try expectVec4ApproxEql(lhs.r2, rhs.r2);
+    try expectVec4ApproxEql(lhs.r3, rhs.r3);
+}
+
 fn expectVec3ApproxEql(expected: Vec3, actual: Vec3) !void {
-    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.01);
-    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.01);
-    try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.01);
+    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.0001);
 }
 
 fn expectVec4ApproxEql(expected: Vec4, actual: Vec4) !void {
-    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.01);
-    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.01);
-    try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.01);
-    try std.testing.expectApproxEqAbs(expected.w, actual.w, 0.01);
+    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.w, actual.w, 0.0001);
 }
