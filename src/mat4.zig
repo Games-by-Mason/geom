@@ -1,10 +1,12 @@
 const std = @import("std");
 const geom = @import("root.zig");
 
+const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
 const Frustum3 = geom.Frustum3;
+const Mat3 = geom.Mat3;
 const Mat3x4 = geom.Mat3x4;
 
 /// A row major 4x4 matrix.
@@ -576,9 +578,7 @@ pub const Mat4 = extern struct {
         try expectVec3ApproxEql(Vec3{ .x = 0.5, .y = 0.0, .z = 0.0 }, m.timesDir(.y_pos));
     }
 
-    // XXX: we use it though, e.g. in getWorldPos
-    /// Gets the translation of the matrix. Useful for human readable output, use for computation is
-    /// discouraged.
+    /// Extracts the translation component of the matrix.
     pub fn getTranslation(self: @This()) Vec3 {
         return .{ .x = self.r0.w, .y = self.r1.w, .z = self.r2.w };
     }
@@ -586,6 +586,26 @@ pub const Mat4 = extern struct {
     test getTranslation {
         const r: Mat4 = .translation(.{ .x = 1, .y = 2, .z = 3 });
         try std.testing.expectEqual(Vec3{ .x = 1, .y = 2, .z = 3 }, r.getTranslation());
+    }
+
+    /// Extracts the rotation matrix. Note that `Mat3` is typically used as a homogeneous 2d matrix,
+    /// but this result treats it as just a 3d matrix.
+    pub fn getRot(self: Mat4) Mat3 {
+        return .{
+            .r0 = .{ .x = self.r0.x, .y = self.r0.y, .z = self.r0.z },
+            .r1 = .{ .x = self.r1.x, .y = self.r1.y, .z = self.r1.z },
+            .r2 = .{ .x = self.r2.x, .y = self.r2.y, .z = self.r2.z },
+        };
+    }
+
+    test getRot {
+        const r: Rotor3 = .fromTo(.{ .x = 1, .y = 2, .z = 3 }, .{ .x = 3, .y = 4, .z = 5 });
+        const a: Mat4 = .rotation(r);
+        const p: Vec3 = .{ .x = 1, .y = 2, .z = 1 };
+        try expectVec2ApproxEql(
+            a.timesPoint(p).toCartesian(),
+            a.getRot().timesVec3(p).toCartesian(),
+        );
     }
 
     /// Returns a vector representing a point transformed by this matrix.
@@ -690,6 +710,35 @@ pub const Mat4 = extern struct {
         };
         try std.testing.expectEqual(m, t);
     }
+
+    /// Returns the inverse of a rotation translation matrix.
+    pub fn inverseRt(self: Mat4) Mat4 {
+        return .fromAffine(self.toAffine().inverseRt());
+    }
+
+    test inverseRt {
+        const m = translation(.{ .x = 1, .y = 2, .z = 3 })
+            .times(rotation(.fromTo(.{ .x = 3, .y = 4, .z = 5 }, .{ .x = 5, .y = 6, .z = 7 })))
+            .times(translation(.{ .x = 7, .y = 8, .z = 9 }))
+            .times(rotation(.fromTo(.{ .x = -9, .y = 10, .z = 11 }, .{ .x = -11, .y = 12, .z = 13 })));
+        const i = m.inverseRt();
+        try expectMat4ApproxEq(identity, m.times(i));
+    }
+
+    /// Inverts a rotation translation matrix.
+    pub fn invertRt(self: *Mat4) void {
+        self.* = self.inverseRt();
+    }
+
+    test invertRt {
+        const m = translation(.{ .x = 1, .y = 2, .z = 3 })
+            .times(rotation(.fromTo(.{ .x = 3, .y = 4, .z = 5 }, .{ .x = 5, .y = 6, .z = 7 })))
+            .times(translation(.{ .x = 7, .y = 8, .z = 9 }))
+            .times(rotation(.fromTo(.{ .x = -9, .y = 10, .z = 11 }, .{ .x = -11, .y = 12, .z = 13 })));
+        var i = m;
+        i.invertRt();
+        try expectMat4ApproxEq(identity, m.times(i));
+    }
 };
 
 fn expectMat4ApproxEq(lhs: Mat4, rhs: Mat4) !void {
@@ -697,6 +746,11 @@ fn expectMat4ApproxEq(lhs: Mat4, rhs: Mat4) !void {
     try expectVec4ApproxEql(lhs.r1, rhs.r1);
     try expectVec4ApproxEql(lhs.r2, rhs.r2);
     try expectVec4ApproxEql(lhs.r3, rhs.r3);
+}
+
+fn expectVec2ApproxEql(expected: Vec2, actual: Vec2) !void {
+    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
 }
 
 fn expectVec3ApproxEql(expected: Vec3, actual: Vec3) !void {

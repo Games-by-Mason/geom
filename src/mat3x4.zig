@@ -1,10 +1,12 @@
 const std = @import("std");
 const geom = @import("root.zig");
 
+const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
 const Frustum3 = geom.Frustum3;
+const Mat3 = geom.Mat3;
 
 /// A row major affine transformation matrix for working in three dimensions.
 ///
@@ -506,6 +508,26 @@ pub const Mat3x4 = extern struct {
         try std.testing.expectEqual(Vec3{ .x = 1, .y = 2, .z = 3 }, r.getTranslation());
     }
 
+    /// Extracts the rotation matrix. Note that `Mat3` is typically used as a homogeneous 2d matrix,
+    /// but this result treats it as just a 3d matrix.
+    pub fn getRot(self: Mat3x4) Mat3 {
+        return .{
+            .r0 = .{ .x = self.r0.x, .y = self.r0.y, .z = self.r0.z },
+            .r1 = .{ .x = self.r1.x, .y = self.r1.y, .z = self.r1.z },
+            .r2 = .{ .x = self.r2.x, .y = self.r2.y, .z = self.r2.z },
+        };
+    }
+
+    test getRot {
+        const r: Rotor3 = .fromTo(.{ .x = 1, .y = 2, .z = 3 }, .{ .x = 3, .y = 4, .z = 5 });
+        const a: Mat3x4 = .rotation(r);
+        const p: Vec3 = .{ .x = 1, .y = 2, .z = 1 };
+        try expectVec2ApproxEql(
+            a.timesPoint(p).toCartesian(),
+            a.getRot().timesVec3(p).toCartesian(),
+        );
+    }
+
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec3) Vec3 {
         // This is as fast in the benchmarks than my attempt to inline and hand optimize it.
@@ -610,12 +632,53 @@ pub const Mat3x4 = extern struct {
         };
         try std.testing.expectEqual(m, t);
     }
+
+    /// Returns the inverse of a rotation translation matrix.
+    pub fn inverseRt(self: Mat3x4) Mat3x4 {
+        const inv_rot = self.getRot().transposed();
+        const trans_neg = self.getTranslation().negated();
+        const inv_trans = inv_rot.timesVec3(trans_neg);
+        return .{
+            .r0 = .{ .x = inv_rot.r0.x, .y = inv_rot.r0.y, .z = inv_rot.r0.z, .w = inv_trans.x },
+            .r1 = .{ .x = inv_rot.r1.x, .y = inv_rot.r1.y, .z = inv_rot.r1.z, .w = inv_trans.y },
+            .r2 = .{ .x = inv_rot.r2.x, .y = inv_rot.r2.y, .z = inv_rot.r2.z, .w = inv_trans.z },
+        };
+    }
+
+    test inverseRt {
+        const m = translation(.{ .x = 1, .y = 2, .z = 3 })
+            .times(rotation(.fromTo(.{ .x = 3, .y = 4, .z = 5 }, .{ .x = 5, .y = 6, .z = 7 })))
+            .times(translation(.{ .x = 7, .y = 8, .z = 9 }))
+            .times(rotation(.fromTo(.{ .x = -9, .y = 10, .z = 11 }, .{ .x = -11, .y = 12, .z = 13 })));
+        const i = m.inverseRt();
+        try expectMat3x4ApproxEq(identity, m.times(i));
+    }
+
+    /// Inverts a rotation translation matrix.
+    pub fn invertRt(self: *Mat3x4) void {
+        self.* = self.inverseRt();
+    }
+
+    test invertRt {
+        const m = translation(.{ .x = 1, .y = 2, .z = 3 })
+            .times(rotation(.fromTo(.{ .x = 3, .y = 4, .z = 5 }, .{ .x = 5, .y = 6, .z = 7 })))
+            .times(translation(.{ .x = 7, .y = 8, .z = 9 }))
+            .times(rotation(.fromTo(.{ .x = -9, .y = 10, .z = 11 }, .{ .x = -11, .y = 12, .z = 13 })));
+        var i = m;
+        i.invertRt();
+        try expectMat3x4ApproxEq(identity, m.times(i));
+    }
 };
 
 fn expectMat3x4ApproxEq(lhs: Mat3x4, rhs: Mat3x4) !void {
     try expectVec4ApproxEql(lhs.r0, rhs.r0);
     try expectVec4ApproxEql(lhs.r1, rhs.r1);
     try expectVec4ApproxEql(lhs.r2, rhs.r2);
+}
+
+fn expectVec2ApproxEql(expected: Vec2, actual: Vec2) !void {
+    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
 }
 
 fn expectVec3ApproxEql(expected: Vec3, actual: Vec3) !void {

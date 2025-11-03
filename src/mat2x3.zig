@@ -5,6 +5,7 @@ const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Rotor2 = geom.Rotor2;
 const Frustum2 = geom.Frustum2;
+const Mat2 = geom.Mat2;
 
 /// A row major affine transformation matrix for working in two dimensions.
 ///
@@ -90,7 +91,7 @@ pub const Mat2x3 = extern struct {
 
     test rotation {
         const m = Mat2x3.rotation(Rotor2.fromTo(.y_pos, .x_pos).nlerp(.identity, 0.5));
-        try std.testing.expectApproxEqAbs(std.math.pi / 4.0, m.getRotation(), 0.01);
+        try std.testing.expectApproxEqAbs(std.math.pi / 4.0, m.getRadians(), 0.01);
         try std.testing.expectEqual(Vec2.zero, m.getTranslation());
 
         try std.testing.expectApproxEqAbs(@cos(std.math.pi / 4.0), m.r0.x, 0.01);
@@ -174,7 +175,7 @@ pub const Mat2x3 = extern struct {
             Vec2{ .x = 8, .y = 2 },
             Mat2x3.translation(.{ .x = -1, .y = 3 }).timesDir(.{ .x = 8, .y = 2 }),
         );
-        try std.testing.expectEqual(0, Mat2x3.translation(.{ .x = -1, .y = 3 }).getRotation());
+        try std.testing.expectEqual(0, Mat2x3.translation(.{ .x = -1, .y = 3 }).getRadians());
     }
 
     pub fn translated(self: @This(), delta: Vec2) @This() {
@@ -212,7 +213,7 @@ pub const Mat2x3 = extern struct {
             Vec2{ .x = 0.5, .y = -6.0 },
             Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).timesDir(.{ .x = 1.0, .y = 3.0 }),
         );
-        try std.testing.expectEqual(0.0, Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).getRotation());
+        try std.testing.expectEqual(0.0, Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).getRadians());
         try std.testing.expectEqual(Vec2.zero, Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).getTranslation());
     }
 
@@ -380,19 +381,33 @@ pub const Mat2x3 = extern struct {
 
     /// Gets the rotation of the matrix in radians. Useful for human readable output, use for
     /// computation is discouraged.
-    pub fn getRotation(self: @This()) f32 {
+    pub fn getRadians(self: @This()) f32 {
         const cos = self.r0.x;
         const sin = self.r0.y;
         return std.math.atan2(sin, cos);
     }
 
-    test getRotation {
+    test getRadians {
         const r: Mat2x3 = .rotation(.fromTo(.y_pos, .x_pos));
-        try std.testing.expectEqual(std.math.pi / 2.0, r.getRotation());
+        try std.testing.expectEqual(std.math.pi / 2.0, r.getRadians());
     }
 
-    /// Gets the translation of the matrix. Useful for human readable output, use for computation is
-    /// discouraged.
+    /// Extracts the rotation matrix.
+    pub fn getRot(self: Mat2x3) Mat2 {
+        return .{
+            .r0 = .{ .x = self.r0.x, .y = self.r0.y },
+            .r1 = .{ .x = self.r1.x, .y = self.r1.y },
+        };
+    }
+
+    test getRot {
+        const r: Rotor2 = .fromTo(.{ .x = 1, .y = 2 }, .{ .x = 3, .y = 4 });
+        const a: Mat2x3 = .rotation(r);
+        const b: Mat2 = .rotation(r);
+        try std.testing.expectEqual(b, a.getRot());
+    }
+
+    /// Gets the translation of the matrix.
     pub fn getTranslation(self: @This()) Vec2 {
         return .{ .x = self.r0.z, .y = self.r1.z };
     }
@@ -500,6 +515,41 @@ pub const Mat2x3 = extern struct {
             .r1 = .{ .x = 2, .y = 5, .z = 0 },
         };
         try std.testing.expectEqual(t, m);
+    }
+
+    /// Returns the inverse of a rotation translation matrix.
+    pub fn inverseRt(self: Mat2x3) Mat2x3 {
+        const inv_rot = self.getRot().transposed();
+        const trans_neg = self.getTranslation().negated();
+        const inv_trans = inv_rot.timesVec2(trans_neg);
+        return .{
+            .r0 = .{ .x = inv_rot.r0.x, .y = inv_rot.r0.y, .z = inv_trans.x },
+            .r1 = .{ .x = inv_rot.r1.x, .y = inv_rot.r1.y, .z = inv_trans.y },
+        };
+    }
+
+    test inverseRt {
+        const m = translation(.{ .x = 1, .y = 2 })
+            .times(rotation(.fromTo(.{ .x = 3, .y = 4 }, .{ .x = 5, .y = 6 })))
+            .times(translation(.{ .x = 7, .y = 8 }))
+            .times(rotation(.fromTo(.{ .x = -9, .y = 10 }, .{ .x = -11, .y = 12 })));
+        const i = m.inverseRt();
+        try expectMat2x3ApproxEq(identity, m.times(i));
+    }
+
+    /// Inverts a rotation translation matrix.
+    pub fn invertRt(self: *Mat2x3) void {
+        self.* = self.inverseRt();
+    }
+
+    test invertRt {
+        const m = translation(.{ .x = 1, .y = 2 })
+            .times(rotation(.fromTo(.{ .x = 3, .y = 4 }, .{ .x = 5, .y = 6 })))
+            .times(translation(.{ .x = 7, .y = 8 }))
+            .times(rotation(.fromTo(.{ .x = -9, .y = 10 }, .{ .x = -11, .y = 12 })));
+        var i = m;
+        i.invertRt();
+        try expectMat2x3ApproxEq(identity, m.times(i));
     }
 };
 
