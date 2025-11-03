@@ -6,54 +6,72 @@ const Vec3 = geom.Vec3;
 const Rotor2 = geom.Rotor2;
 const Frustum2 = geom.Frustum2;
 const Mat2 = geom.Mat2;
+const Mat2x3 = geom.Mat2x3;
 
-/// A row major affine transformation matrix for working in two dimensions.
-///
-/// Elides `r2` as compared to `Mat3` to save on space/computation, it's implicitly considered to be
-/// `Mat3.identity.r2`.
-pub const Mat2x3 = extern struct {
+/// A row major transformation matrix for working in two dimensions.
+pub const Mat3 = extern struct {
     /// Row 0, the x basis vector.
     r0: Vec3,
     /// Row 1, the y basis vector.
     r1: Vec3,
+    /// Row 2, the z basis vector.
+    r2: Vec3,
 
     /// The identity matrix. Has no effect.
     pub const identity: @This() = .{
         .r0 = .{ .x = 1, .y = 0, .z = 0 },
         .r1 = .{ .x = 0, .y = 1, .z = 0 },
+        .r2 = .{ .x = 0, .y = 0, .z = 1 },
     };
 
     test identity {
         const p1: Vec2 = .{ .x = 2.0, .y = 3.0 };
         const p2: Vec2 = .{ .x = 4.0, .y = -2.0 };
-        try std.testing.expectEqual(Mat2x3.identity, Mat2x3.identity.times(.identity));
-        try std.testing.expectEqual(p1, Mat2x3.identity.timesPoint(p1));
-        try std.testing.expectEqual(p2, Mat2x3.identity.timesPoint(p2));
+        try std.testing.expectEqual(Mat3.identity, Mat3.identity.times(.identity));
+        try std.testing.expectEqual(p1, Mat3.identity.timesPoint(p1));
+        try std.testing.expectEqual(p2, Mat3.identity.timesPoint(p2));
     }
 
     /// Checks for equality.
-    pub fn eql(self: Mat2x3, other: Mat2x3) bool {
+    pub fn eql(self: Mat3, other: Mat3) bool {
         return std.meta.eql(self, other);
     }
 
     test eql {
-        try std.testing.expect(Mat2x3.identity.eql(Mat2x3.identity));
-        try std.testing.expect(!Mat2x3.identity.eql(Mat2x3.translation(.y_pos)));
+        try std.testing.expect(Mat3.identity.eql(Mat3.identity));
+        try std.testing.expect(!Mat3.identity.eql(Mat3.translation(.y_pos)));
+    }
+
+    /// Extends the affine matrix into a full matrix by appending the missing components from the
+    /// identity matrix.
+    pub fn fromAffine(m: Mat2x3) Mat3 {
+        return .{
+            .r0 = m.r0,
+            .r1 = m.r1,
+            .r2 = identity.r2,
+        };
+    }
+
+    test fromAffine {
+        try std.testing.expectEqual(identity, fromAffine(.identity));
+    }
+
+    /// Truncates the matrix into an affine matrix.
+    pub fn toAffine(self: Mat3) Mat2x3 {
+        return .{
+            .r0 = self.r0,
+            .r1 = self.r1,
+        };
+    }
+
+    test toAffine {
+        try std.testing.expectEqual(Mat2x3.identity, identity.toAffine());
     }
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan clip
     /// space.
     pub fn orthoFromFrustum(frustum: Frustum2) @This() {
-        const width = frustum.right - frustum.left;
-        const height = frustum.bottom - frustum.top;
-        const x_scale = 2 / width;
-        const y_scale = 2 / height;
-        const x_off = -(frustum.right + frustum.left) / width;
-        const y_off = -(frustum.top + frustum.bottom) / height;
-        return .{
-            .r0 = .{ .x = x_scale, .y = 0, .z = x_off },
-            .r1 = .{ .x = 0, .y = y_scale, .z = y_off },
-        };
+        return .fromAffine(.orthoFromFrustum(frustum));
     }
 
     test orthoFromFrustum {
@@ -86,11 +104,12 @@ pub const Mat2x3 = extern struct {
         return .{
             .r0 = x.dir(),
             .r1 = y.dir(),
+            .r2 = identity.r2,
         };
     }
 
     test rotation {
-        const m = Mat2x3.rotation(Rotor2.fromTo(.y_pos, .x_pos).nlerp(.identity, 0.5));
+        const m = Mat3.rotation(Rotor2.fromTo(.y_pos, .x_pos).nlerp(.identity, 0.5));
         try std.testing.expectApproxEqAbs(std.math.pi / 4.0, m.getRadians(), 0.01);
         try std.testing.expectEqual(Vec2.zero, m.getTranslation());
 
@@ -101,36 +120,36 @@ pub const Mat2x3 = extern struct {
 
         try expectVec2ApproxEql(
             .y_pos,
-            Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.x_pos),
+            Mat3.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.x_pos),
         );
         try expectVec2ApproxEql(
             .x_neg,
-            Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.y_pos),
+            Mat3.rotation(.fromTo(.x_pos, .y_pos)).timesPoint(.y_pos),
         );
         try expectVec2ApproxEql(
             .x_pos,
-            Mat2x3.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.x_neg),
+            Mat3.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.x_neg),
         );
         try expectVec2ApproxEql(
             .y_neg,
-            Mat2x3.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.y_pos),
+            Mat3.rotation(.fromTo(.x_neg, .x_pos)).timesPoint(.y_pos),
         );
 
         try expectVec2ApproxEql(
             .y_pos,
-            Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.x_pos),
+            Mat3.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.x_pos),
         );
         try expectVec2ApproxEql(
             .x_neg,
-            Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.y_pos),
+            Mat3.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.y_pos),
         );
         try expectVec2ApproxEql(
             .x_pos,
-            Mat2x3.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.x_neg),
+            Mat3.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.x_neg),
         );
         try expectVec2ApproxEql(
             .y_neg,
-            Mat2x3.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.y_pos),
+            Mat3.rotation(.fromTo(.x_neg, .x_pos)).timesDir(.y_pos),
         );
     }
 
@@ -151,31 +170,33 @@ pub const Mat2x3 = extern struct {
         return .{
             .r0 = .{ .x = 1, .y = 0, .z = delta.x },
             .r1 = .{ .x = 0, .y = 1, .z = delta.y },
+            .r2 = identity.r2,
         };
     }
 
     test translation {
-        try std.testing.expectEqual(Mat2x3{
+        try std.testing.expectEqual(Mat3{
             .r0 = .{ .x = 1, .y = 0, .z = 1 },
             .r1 = .{ .x = 0, .y = 1, .z = 2 },
-        }, Mat2x3.translation(.{ .x = 1, .y = 2 }));
+            .r2 = identity.r2,
+        }, Mat3.translation(.{ .x = 1, .y = 2 }));
         try std.testing.expectEqual(
             Vec2{ .x = 3, .y = 5 },
-            Mat2x3.translation(.{ .x = 1, .y = 2 }).timesPoint(.{ .x = 2, .y = 3 }),
+            Mat3.translation(.{ .x = 1, .y = 2 }).timesPoint(.{ .x = 2, .y = 3 }),
         );
         try std.testing.expectEqual(
             Vec2{ .x = 7, .y = 5 },
-            Mat2x3.translation(.{ .x = -1, .y = 3 }).timesPoint(.{ .x = 8, .y = 2 }),
+            Mat3.translation(.{ .x = -1, .y = 3 }).timesPoint(.{ .x = 8, .y = 2 }),
         );
         try std.testing.expectEqual(
             Vec2{ .x = 2, .y = 3 },
-            Mat2x3.translation(.{ .x = 1, .y = 2 }).timesDir(.{ .x = 2, .y = 3 }),
+            Mat3.translation(.{ .x = 1, .y = 2 }).timesDir(.{ .x = 2, .y = 3 }),
         );
         try std.testing.expectEqual(
             Vec2{ .x = 8, .y = 2 },
-            Mat2x3.translation(.{ .x = -1, .y = 3 }).timesDir(.{ .x = 8, .y = 2 }),
+            Mat3.translation(.{ .x = -1, .y = 3 }).timesDir(.{ .x = 8, .y = 2 }),
         );
-        try std.testing.expectEqual(0, Mat2x3.translation(.{ .x = -1, .y = 3 }).getRadians());
+        try std.testing.expectEqual(0, Mat3.translation(.{ .x = -1, .y = 3 }).getRadians());
     }
 
     pub fn translated(self: @This(), delta: Vec2) @This() {
@@ -183,9 +204,10 @@ pub const Mat2x3 = extern struct {
     }
 
     test translated {
-        try std.testing.expectEqual(Mat2x3{
+        try std.testing.expectEqual(Mat3{
             .r0 = .{ .x = 1, .y = 0, .z = 1 },
             .r1 = .{ .x = 0, .y = 1, .z = 2 },
+            .r2 = identity.r2,
         }, identity.translated(.{ .x = 1, .y = 2 }));
     }
 
@@ -194,27 +216,29 @@ pub const Mat2x3 = extern struct {
         return .{
             .r0 = .{ .x = amount.x, .y = 0, .z = 0.0 },
             .r1 = .{ .x = 0, .y = amount.y, .z = 0.0 },
+            .r2 = identity.r2,
         };
     }
 
     test scale {
         try std.testing.expectEqual(
-            Mat2x3{
+            Mat3{
                 .r0 = .{ .x = 0.5, .y = 0.0, .z = 0 },
                 .r1 = .{ .x = 0.0, .y = 1.7, .z = 0 },
+                .r2 = identity.r2,
             },
-            Mat2x3.scale(.{ .x = 0.5, .y = 1.7 }),
+            Mat3.scale(.{ .x = 0.5, .y = 1.7 }),
         );
         try std.testing.expectEqual(
             Vec2{ .x = 0.5, .y = -6.0 },
-            Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).timesPoint(.{ .x = 1.0, .y = 3.0 }),
+            Mat3.scale(.{ .x = 0.5, .y = -2.0 }).timesPoint(.{ .x = 1.0, .y = 3.0 }),
         );
         try std.testing.expectEqual(
             Vec2{ .x = 0.5, .y = -6.0 },
-            Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).timesDir(.{ .x = 1.0, .y = 3.0 }),
+            Mat3.scale(.{ .x = 0.5, .y = -2.0 }).timesDir(.{ .x = 1.0, .y = 3.0 }),
         );
-        try std.testing.expectEqual(0.0, Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).getRadians());
-        try std.testing.expectEqual(Vec2.zero, Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).getTranslation());
+        try std.testing.expectEqual(0.0, Mat3.scale(.{ .x = 0.5, .y = -2.0 }).getRadians());
+        try std.testing.expectEqual(Vec2.zero, Mat3.scale(.{ .x = 0.5, .y = -2.0 }).getTranslation());
     }
 
     pub fn scaled(self: @This(), delta: Vec2) @This() {
@@ -223,27 +247,28 @@ pub const Mat2x3 = extern struct {
 
     test scaled {
         try std.testing.expectEqual(
-            Mat2x3{
+            Mat3{
                 .r0 = .{ .x = 0.5, .y = 0.0, .z = 0.0 },
                 .r1 = .{ .x = 0.0, .y = 1.7, .z = 0.0 },
+                .r2 = identity.r2,
             },
-            Mat2x3.scale(.{ .x = 0.5, .y = 1.7 }),
+            Mat3.scale(.{ .x = 0.5, .y = 1.7 }),
         );
         try std.testing.expectEqual(
             Vec2{ .x = 0.5, .y = -6.0 },
-            Mat2x3.identity.scaled(.{ .x = 0.5, .y = -2.0 })
+            Mat3.identity.scaled(.{ .x = 0.5, .y = -2.0 })
                 .timesPoint(.{ .x = 1.0, .y = 3.0 }),
         );
         try std.testing.expectEqual(
             Vec2{ .x = 0.5, .y = -6.0 },
-            Mat2x3.identity.scaled(.{ .x = 0.5, .y = -2.0 })
+            Mat3.identity.scaled(.{ .x = 0.5, .y = -2.0 })
                 .timesDir(.{ .x = 1.0, .y = 3.0 }),
         );
-        try std.testing.expectEqual(Vec2.zero, Mat2x3.scale(.{ .x = 0.5, .y = -2.0 }).getTranslation());
+        try std.testing.expectEqual(Vec2.zero, Mat3.scale(.{ .x = 0.5, .y = -2.0 }).getTranslation());
     }
 
     test "rotatedTranslatedScaled" {
-        var m = Mat2x3.identity;
+        var m = Mat3.identity;
         m = m.translated(.y_pos);
         m = m.rotated(.fromAngle(std.math.pi));
         m = m.scaled(.splat(0.5));
@@ -252,46 +277,76 @@ pub const Mat2x3 = extern struct {
     }
 
     /// Returns `lhs` multiplied by `rhs`.
-    pub fn times(lhs: Mat2x3, rhs: Mat2x3) Mat2x3 {
+    pub fn times(lhs: Mat3, rhs: Mat3) Mat3 {
+        const V3 = @Vector(3, f32);
+
+        const f: V3 = .{ rhs.r2.x, rhs.r2.y, rhs.r2.z };
+        const d: V3 = .{ rhs.r1.x, rhs.r1.y, rhs.r1.z };
+        const b: V3 = .{ rhs.r0.x, rhs.r0.y, rhs.r0.z };
+        const r0 = b: {
+            const e: V3 = @splat(lhs.r0.z);
+            const temp2 = e * f;
+            const c: V3 = @splat(lhs.r0.y);
+            const temp = @mulAdd(V3, c, d, temp2);
+
+            const a: V3 = @splat(lhs.r0.x);
+            break :b @mulAdd(V3, a, b, temp);
+        };
+        const r1 = b: {
+            const e: V3 = @splat(lhs.r1.z);
+            const temp2 = e * f;
+
+            const c: V3 = @splat(lhs.r1.y);
+            const temp = @mulAdd(V3, c, d, temp2);
+
+            const a: V3 = @splat(lhs.r1.x);
+            break :b @mulAdd(V3, a, b, temp);
+        };
+        const r2 = b: {
+            const e: V3 = @splat(lhs.r2.z);
+            const temp2 = e * f;
+
+            const c: V3 = @splat(lhs.r2.y);
+            const temp = @mulAdd(V3, c, d, temp2);
+
+            const a: V3 = @splat(lhs.r2.x);
+            break :b @mulAdd(V3, a, b, temp);
+        };
         return .{
-            .r0 = .{
-                .x = @mulAdd(f32, lhs.r0.x, rhs.r0.x, lhs.r0.y * rhs.r1.x),
-                .y = @mulAdd(f32, lhs.r0.x, rhs.r0.y, lhs.r0.y * rhs.r1.y),
-                .z = @mulAdd(f32, lhs.r0.x, rhs.r0.z, @mulAdd(f32, lhs.r0.y, rhs.r1.z, lhs.r0.z)),
-            },
-            .r1 = .{
-                .x = @mulAdd(f32, lhs.r1.x, rhs.r0.x, lhs.r1.y * rhs.r1.x),
-                .y = @mulAdd(f32, lhs.r1.x, rhs.r0.y, lhs.r1.y * rhs.r1.y),
-                .z = @mulAdd(f32, lhs.r1.x, rhs.r0.z, @mulAdd(f32, lhs.r1.y, rhs.r1.z, lhs.r1.z)),
-            },
+            .r0 = .{ .x = r0[0], .y = r0[1], .z = r0[2] },
+            .r1 = .{ .x = r1[0], .y = r1[1], .z = r1[2] },
+            .r2 = .{ .x = r2[0], .y = r2[1], .z = r2[2] },
         };
     }
 
     test times {
-        const t: Mat2x3 = .translation(.{ .x = 1.0, .y = 2.0 });
-        const r: Mat2x3 = .rotation(.fromTo(.y_pos, .x_pos));
-        const s: Mat2x3 = .scale(.{ .x = 0.5, .y = 3.0 });
+        const t: Mat3 = .translation(.{ .x = 1.0, .y = 2.0 });
+        const r: Mat3 = .rotation(.fromTo(.y_pos, .x_pos));
+        const s: Mat3 = .scale(.{ .x = 0.5, .y = 3.0 });
 
         {
-            const a: Mat2x3 = .{
+            const a: Mat3 = .{
                 .r0 = .{ .x = 1, .y = 2, .z = 3 },
                 .r1 = .{ .x = 4, .y = 5, .z = 6 },
+                .r2 = .{ .x = 7, .y = 8, .z = 9 },
             };
-            const b: Mat2x3 = .{
+            const b: Mat3 = .{
                 .r0 = .{ .x = 10, .y = 20, .z = 30 },
                 .r1 = .{ .x = 40, .y = 50, .z = 60 },
+                .r2 = .{ .x = 70, .y = 80, .z = 90 },
             };
             try std.testing.expectEqual(
-                Mat2x3{
-                    .r0 = .{ .x = 90, .y = 120, .z = 153 },
-                    .r1 = .{ .x = 240, .y = 330, .z = 426 },
+                Mat3{
+                    .r0 = .{ .x = 300, .y = 360, .z = 420 },
+                    .r1 = .{ .x = 660, .y = 810, .z = 960 },
+                    .r2 = .{ .x = 1020, .y = 1260, .z = 1500 },
                 },
                 a.times(b),
             );
         }
 
         {
-            var m: Mat2x3 = .identity;
+            var m: Mat3 = .identity;
             m = t.times(m);
             m = r.times(m);
             m = s.times(m);
@@ -320,11 +375,11 @@ pub const Mat2x3 = extern struct {
     }
 
     test mul {
-        const t: Mat2x3 = .translation(.{ .x = 1.0, .y = 2.0 });
-        const r: Mat2x3 = .rotation(.fromTo(.y_pos, .x_pos));
-        const s: Mat2x3 = .scale(.{ .x = 0.5, .y = 3.0 });
+        const t: Mat3 = .translation(.{ .x = 1.0, .y = 2.0 });
+        const r: Mat3 = .rotation(.fromTo(.y_pos, .x_pos));
+        const s: Mat3 = .scale(.{ .x = 0.5, .y = 3.0 });
 
-        var m: Mat2x3 = .identity;
+        var m: Mat3 = .identity;
         m.mul(s);
         m.mul(r);
         m.mul(t);
@@ -343,9 +398,9 @@ pub const Mat2x3 = extern struct {
     }
 
     test applied {
-        const t: Mat2x3 = .translation(.{ .x = 1.0, .y = 2.0 });
-        const r: Mat2x3 = .rotation(.fromTo(.y_pos, .x_pos));
-        const s: Mat2x3 = .scale(.{ .x = 0.5, .y = 3.0 });
+        const t: Mat3 = .translation(.{ .x = 1.0, .y = 2.0 });
+        const r: Mat3 = .rotation(.fromTo(.y_pos, .x_pos));
+        const s: Mat3 = .scale(.{ .x = 0.5, .y = 3.0 });
 
         const m = t.applied(r).applied(s);
 
@@ -363,11 +418,11 @@ pub const Mat2x3 = extern struct {
     }
 
     test apply {
-        const t: Mat2x3 = .translation(.{ .x = 1.0, .y = 2.0 });
-        const r: Mat2x3 = .rotation(.fromTo(.y_pos, .x_pos));
-        const s: Mat2x3 = .scale(.{ .x = 0.5, .y = 3.0 });
+        const t: Mat3 = .translation(.{ .x = 1.0, .y = 2.0 });
+        const r: Mat3 = .rotation(.fromTo(.y_pos, .x_pos));
+        const s: Mat3 = .scale(.{ .x = 0.5, .y = 3.0 });
 
-        var m: Mat2x3 = .identity;
+        var m: Mat3 = .identity;
         m.apply(t);
         m.apply(r);
         m.apply(s);
@@ -388,12 +443,12 @@ pub const Mat2x3 = extern struct {
     }
 
     test getRadians {
-        const r: Mat2x3 = .rotation(.fromTo(.y_pos, .x_pos));
+        const r: Mat3 = .rotation(.fromTo(.y_pos, .x_pos));
         try std.testing.expectEqual(std.math.pi / 2.0, r.getRadians());
     }
 
     /// Extracts the rotation matrix.
-    pub fn getRot(self: Mat2x3) Mat2 {
+    pub fn getRot(self: Mat3) Mat2 {
         return .{
             .r0 = .{ .x = self.r0.x, .y = self.r0.y },
             .r1 = .{ .x = self.r1.x, .y = self.r1.y },
@@ -402,18 +457,18 @@ pub const Mat2x3 = extern struct {
 
     test getRot {
         const r: Rotor2 = .fromTo(.{ .x = 1, .y = 2 }, .{ .x = 3, .y = 4 });
-        const a: Mat2x3 = .rotation(r);
+        const a: Mat3 = .rotation(r);
         const b: Mat2 = .rotation(r);
         try std.testing.expectEqual(b, a.getRot());
     }
 
-    /// Gets the translation of the matrix.
+    /// Extracts the translation component of the matrix.
     pub fn getTranslation(self: @This()) Vec2 {
         return .{ .x = self.r0.z, .y = self.r1.z };
     }
 
     test getTranslation {
-        const r: Mat2x3 = .translation(.{ .x = 1, .y = 2 });
+        const r: Mat3 = .translation(.{ .x = 1, .y = 2 });
         try std.testing.expectEqual(Vec2{ .x = 1, .y = 2 }, r.getTranslation());
     }
 
@@ -429,22 +484,18 @@ pub const Mat2x3 = extern struct {
 
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec2) Vec2 {
-        // The missing FMAs are intentional, adding them reduces benchmark performance slightly on
-        // my AMD Ryzen 9 7950X.
-        // Note that we don't need to divide by the homogeneous coordinate because we know that it's
-        // always 1.
-        return .{
-            .x = self.r0.y * v.y + @mulAdd(f32, self.r0.x, v.x, self.r0.z),
-            .y = self.r1.y * v.y + @mulAdd(f32, self.r1.x, v.x, self.r1.z),
-        };
+        // Inlining this to remove the multiplication by one doesn't improve benchmark performance.
+        return self.timesVec3(v.point()).toCartesian();
     }
 
     test timesPoint {
         const p1: Vec2 = .{ .x = 2.0, .y = 3.0 };
-        try std.testing.expectEqual(p1, Mat2x3.identity.timesPoint(p1));
+        var m: Mat3 = .identity;
+        m.r2.y = 0.5; // Make sure we test the conversion to Cartesian space!
+        try std.testing.expectEqual(Vec2{ .x = 0.8, .y = 1.2 }, m.timesPoint(p1));
         try std.testing.expectEqual(
             Vec2{ .x = 3, .y = 5 },
-            Mat2x3.translation(.{ .x = 1, .y = 2 }).timesPoint(p1),
+            Mat3.translation(.{ .x = 1, .y = 2 }).timesPoint(p1),
         );
     }
 
@@ -459,10 +510,12 @@ pub const Mat2x3 = extern struct {
     test timesDir {
         try expectVec2ApproxEql(
             Vec2.y_pos,
-            Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.x_pos),
+            Mat3.rotation(.fromTo(.x_pos, .y_pos)).timesDir(.x_pos),
         );
         const p1: Vec2 = .{ .x = 2.0, .y = 3.0 };
-        try std.testing.expectEqual(p1, Mat2x3.translation(.{ .x = 1, .y = 2 }).timesDir(p1));
+        var m = Mat3.translation(.{ .x = 1, .y = 2 });
+        m.r2.y = 0.5;
+        try std.testing.expectEqual(p1, m.timesDir(p1));
     }
 
     /// Multiplies the matrix by a homogeneous vec3.
@@ -470,34 +523,37 @@ pub const Mat2x3 = extern struct {
         return .{
             .x = self.r0.innerProd(v),
             .y = self.r1.innerProd(v),
-            .z = v.z,
+            .z = self.r2.innerProd(v),
         };
     }
 
     test timesVec3 {
         try expectVec3ApproxEql(
             Vec3.y_pos,
-            Mat2x3.rotation(.fromTo(.x_pos, .y_pos)).timesVec3(.x_pos),
+            Mat3.rotation(.fromTo(.x_pos, .y_pos)).timesVec3(.x_pos),
         );
     }
 
-    /// Returns the transpose of the matrix, assuming the missing row is `Mat3.identity.r2`. For
-    /// pure rotation matrices, the transpose is equivalent to the inverse.
-    pub fn transposed(self: @This()) Mat2x3 {
+    /// Returns the transpose of the matrix. For pure rotation matrices, the transpose is equivalent
+    /// to the inverse.
+    pub fn transposed(self: @This()) Mat3 {
         return .{
-            .r0 = .{ .x = self.r0.x, .y = self.r1.x, .z = 0 },
-            .r1 = .{ .x = self.r0.y, .y = self.r1.y, .z = 0 },
+            .r0 = .{ .x = self.r0.x, .y = self.r1.x, .z = self.r2.x },
+            .r1 = .{ .x = self.r0.y, .y = self.r1.y, .z = self.r2.y },
+            .r2 = .{ .x = self.r0.z, .y = self.r1.z, .z = self.r2.z },
         };
     }
 
     test transposed {
-        const m: Mat2x3 = .{
+        const m: Mat3 = .{
             .r0 = .{ .x = 1, .y = 2, .z = 3 },
             .r1 = .{ .x = 4, .y = 5, .z = 6 },
+            .r2 = .{ .x = 7, .y = 8, .z = 9 },
         };
-        const t: Mat2x3 = .{
-            .r0 = .{ .x = 1, .y = 4, .z = 0 },
-            .r1 = .{ .x = 2, .y = 5, .z = 0 },
+        const t: Mat3 = .{
+            .r0 = .{ .x = 1, .y = 4, .z = 7 },
+            .r1 = .{ .x = 2, .y = 5, .z = 8 },
+            .r2 = .{ .x = 3, .y = 6, .z = 9 },
         };
         try std.testing.expectEqual(t, m.transposed());
 
@@ -505,37 +561,33 @@ pub const Mat2x3 = extern struct {
             .{ .x = 1, .y = 2 },
             .{ .x = 3, .y = 4 },
         ));
-        try expectMat2x3ApproxEq(identity, r.times(r.transposed()));
+        try expectMat3ApproxEq(identity, r.times(r.transposed()));
     }
 
-    /// Transposes the matrix, assuming the missing row is `Mat3.identity.r3`. For pure rotation
-    /// matrices, the transpose is equivalent to the inverse.
+    /// Transposes the matrix. For pure rotation matrices, the transpose is equivalent to the
+    /// inverse.
     pub fn transpose(self: *@This()) void {
         self.* = self.transposed();
     }
 
     test transpose {
-        var m: Mat2x3 = .{
+        var m: Mat3 = .{
             .r0 = .{ .x = 1, .y = 2, .z = 3 },
             .r1 = .{ .x = 4, .y = 5, .z = 6 },
+            .r2 = .{ .x = 7, .y = 8, .z = 9 },
         };
         m.transpose();
-        const t: Mat2x3 = .{
-            .r0 = .{ .x = 1, .y = 4, .z = 0 },
-            .r1 = .{ .x = 2, .y = 5, .z = 0 },
+        const t: Mat3 = .{
+            .r0 = .{ .x = 1, .y = 4, .z = 7 },
+            .r1 = .{ .x = 2, .y = 5, .z = 8 },
+            .r2 = .{ .x = 3, .y = 6, .z = 9 },
         };
-        try std.testing.expectEqual(t, m);
+        try std.testing.expectEqual(m, t);
     }
 
     /// Returns the inverse of a rotation translation matrix.
-    pub fn inverseRt(self: Mat2x3) Mat2x3 {
-        const inv_rot = self.getRot().transposed();
-        const trans_neg = self.getTranslation().negated();
-        const inv_trans = inv_rot.timesVec2(trans_neg);
-        return .{
-            .r0 = .{ .x = inv_rot.r0.x, .y = inv_rot.r0.y, .z = inv_trans.x },
-            .r1 = .{ .x = inv_rot.r1.x, .y = inv_rot.r1.y, .z = inv_trans.y },
-        };
+    pub fn inverseRt(self: Mat3) Mat3 {
+        return .fromAffine(self.toAffine().inverseRt());
     }
 
     test inverseRt {
@@ -544,11 +596,11 @@ pub const Mat2x3 = extern struct {
             .times(translation(.{ .x = 7, .y = 8 }))
             .times(rotation(.fromTo(.{ .x = -9, .y = 10 }, .{ .x = -11, .y = 12 })));
         const i = m.inverseRt();
-        try expectMat2x3ApproxEq(identity, m.times(i));
+        try expectMat3ApproxEq(identity, m.times(i));
     }
 
     /// Inverts a rotation translation matrix.
-    pub fn invertRt(self: *Mat2x3) void {
+    pub fn invertRt(self: *Mat3) void {
         self.* = self.inverseRt();
     }
 
@@ -559,18 +611,13 @@ pub const Mat2x3 = extern struct {
             .times(rotation(.fromTo(.{ .x = -9, .y = 10 }, .{ .x = -11, .y = 12 })));
         var i = m;
         i.invertRt();
-        try expectMat2x3ApproxEq(identity, m.times(i));
+        try expectMat3ApproxEq(identity, m.times(i));
     }
 
     /// Returns the inverse of a translate scale matrix. Useful for inverting orthographic
     /// projections.
-    pub fn inverseTs(self: Mat2x3) Mat2x3 {
-        const t = self.getTranslation();
-        const s = self.getScale();
-        return .{
-            .r0 = .{ .x = 1.0 / s.x, .y = 0, .z = -t.x / s.x },
-            .r1 = .{ .x = 0, .y = 1.0 / s.y, .z = -t.y / s.y },
-        };
+    pub fn inverseTs(self: Mat3) Mat3 {
+        return .fromAffine(self.toAffine().inverseTs());
     }
 
     test inverseTs {
@@ -580,15 +627,15 @@ pub const Mat2x3 = extern struct {
             .top = 4.1,
             .bottom = -2.2,
         });
-        try expectMat2x3ApproxEq(identity, m.times(m.inverseTs()));
+        try expectMat3ApproxEq(identity, m.times(m.inverseTs()));
     }
 
     /// Inverts a translate scale matrix. Useful for inverting orthographic projections.
-    pub fn invertTs(self: *Mat2x3) void {
+    pub fn inverTs(self: *Mat3) void {
         self.* = self.inverseTs();
     }
 
-    test invertTs {
+    test inverTs {
         const m = orthoFromFrustum(.{
             .left = -2.5,
             .right = 0.3,
@@ -596,14 +643,15 @@ pub const Mat2x3 = extern struct {
             .bottom = -2.2,
         });
         var i = m;
-        i.invertTs();
-        try expectMat2x3ApproxEq(identity, m.times(i));
+        i.inverTs();
+        try expectMat3ApproxEq(identity, m.times(i));
     }
 };
 
-fn expectMat2x3ApproxEq(lhs: Mat2x3, rhs: Mat2x3) !void {
+fn expectMat3ApproxEq(lhs: Mat3, rhs: Mat3) !void {
     try expectVec3ApproxEql(lhs.r0, rhs.r0);
     try expectVec3ApproxEql(lhs.r1, rhs.r1);
+    try expectVec3ApproxEql(lhs.r2, rhs.r2);
 }
 
 fn expectVec2ApproxEql(expected: Vec2, actual: Vec2) !void {

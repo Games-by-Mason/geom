@@ -351,19 +351,19 @@ pub fn perlinPeriodic(p: anytype, period: @TypeOf(p)) f32 {
             // Get the samples
             const s00 = perlinDotGrad2(
                 cell.plus(o00).modded(period),
-                t.minus(o00).modded(Vec2.splat(0.5).minus(o00).signOf().compProd(period)),
+                t.minus(o00).modded(Vec2.splat(0.5).minus(o00).signOf().timesComps(period)),
             );
             const s10 = perlinDotGrad2(
                 cell.plus(o10).modded(period),
-                t.minus(o10).modded(Vec2.splat(0.5).minus(o10).signOf().compProd(period)),
+                t.minus(o10).modded(Vec2.splat(0.5).minus(o10).signOf().timesComps(period)),
             );
             const s01 = perlinDotGrad2(
                 cell.plus(o01).modded(period),
-                t.minus(o01).modded(Vec2.splat(0.5).minus(o01).signOf().compProd(period)),
+                t.minus(o01).modded(Vec2.splat(0.5).minus(o01).signOf().timesComps(period)),
             );
             const s11 = perlinDotGrad2(
                 cell.plus(o11).modded(period),
-                t.minus(o11).modded(Vec2.splat(0.5).minus(o11).signOf().compProd(period)),
+                t.minus(o11).modded(Vec2.splat(0.5).minus(o11).signOf().timesComps(period)),
             );
 
             // Perform bilinear interpolation with a smootherstep factor
@@ -394,35 +394,35 @@ pub fn perlinPeriodic(p: anytype, period: @TypeOf(p)) f32 {
             // Get the sample values
             const s000 = perlinDotGrad3(
                 cell.plus(o000).modded(period),
-                t.minus(o000).modded(Vec3.splat(0.5).minus(o000).signOf().compProd(period)),
+                t.minus(o000).modded(Vec3.splat(0.5).minus(o000).signOf().timesComps(period)),
             );
             const s100 = perlinDotGrad3(
                 cell.plus(o100).modded(period),
-                t.minus(o100).modded(Vec3.splat(0.5).minus(o100).signOf().compProd(period)),
+                t.minus(o100).modded(Vec3.splat(0.5).minus(o100).signOf().timesComps(period)),
             );
             const s010 = perlinDotGrad3(
                 cell.plus(o010).modded(period),
-                t.minus(o010).modded(Vec3.splat(0.5).minus(o010).signOf().compProd(period)),
+                t.minus(o010).modded(Vec3.splat(0.5).minus(o010).signOf().timesComps(period)),
             );
             const s110 = perlinDotGrad3(
                 cell.plus(o110).modded(period),
-                t.minus(o110).modded(Vec3.splat(0.5).minus(o110).signOf().compProd(period)),
+                t.minus(o110).modded(Vec3.splat(0.5).minus(o110).signOf().timesComps(period)),
             );
             const s001 = perlinDotGrad3(
                 cell.plus(o001).modded(period),
-                t.minus(o001).modded(Vec3.splat(0.5).minus(o001).signOf().compProd(period)),
+                t.minus(o001).modded(Vec3.splat(0.5).minus(o001).signOf().timesComps(period)),
             );
             const s101 = perlinDotGrad3(
                 cell.plus(o101).modded(period),
-                t.minus(o101).modded(Vec3.splat(0.5).minus(o101).signOf().compProd(period)),
+                t.minus(o101).modded(Vec3.splat(0.5).minus(o101).signOf().timesComps(period)),
             );
             const s011 = perlinDotGrad3(
                 cell.plus(o011).modded(period),
-                t.minus(o011).modded(Vec3.splat(0.5).minus(o011).signOf().compProd(period)),
+                t.minus(o011).modded(Vec3.splat(0.5).minus(o011).signOf().timesComps(period)),
             );
             const s111 = perlinDotGrad3(
                 cell.plus(o111).modded(period),
-                t.minus(o111).modded(Vec3.splat(0.5).minus(o111).signOf().compProd(period)),
+                t.minus(o111).modded(Vec3.splat(0.5).minus(o111).signOf().timesComps(period)),
             );
 
             // Perform trilinear interpolation with a smootherstep factor
@@ -469,67 +469,67 @@ pub fn perlinPeriodic(p: anytype, period: @TypeOf(p)) f32 {
             // Get the sample values
             const s0000 = perlinDotGrad4(
                 cell.plus(o0000).modded(period),
-                t.minus(o0000).modded(Vec4.splat(0.5).minus(o0000).signOf().compProd(period)),
+                t.minus(o0000).modded(Vec4.splat(0.5).minus(o0000).signOf().timesComps(period)),
             );
             const s1000 = perlinDotGrad4(
                 cell.plus(o1000).modded(period),
-                t.minus(o1000).modded(Vec4.splat(0.5).minus(o1000).signOf().compProd(period)),
+                t.minus(o1000).modded(Vec4.splat(0.5).minus(o1000).signOf().timesComps(period)),
             );
             const s0100 = perlinDotGrad4(
                 cell.plus(o0100).modded(period),
-                t.minus(o0100).modded(Vec4.splat(0.5).minus(o0100).signOf().compProd(period)),
+                t.minus(o0100).modded(Vec4.splat(0.5).minus(o0100).signOf().timesComps(period)),
             );
             const s1100 = perlinDotGrad4(
                 cell.plus(o1100).modded(period),
-                t.minus(o1100).modded(Vec4.splat(0.5).minus(o1100).signOf().compProd(period)),
+                t.minus(o1100).modded(Vec4.splat(0.5).minus(o1100).signOf().timesComps(period)),
             );
             const s0010 = perlinDotGrad4(
                 cell.plus(o0010).modded(period),
-                t.minus(o0010).modded(Vec4.splat(0.5).minus(o0010).signOf().compProd(period)),
+                t.minus(o0010).modded(Vec4.splat(0.5).minus(o0010).signOf().timesComps(period)),
             );
             const s1010 = perlinDotGrad4(
                 cell.plus(o1010).modded(period),
-                t.minus(o1010).modded(Vec4.splat(0.5).minus(o1010).signOf().compProd(period)),
+                t.minus(o1010).modded(Vec4.splat(0.5).minus(o1010).signOf().timesComps(period)),
             );
             const s0110 = perlinDotGrad4(
                 cell.plus(o0110).modded(period),
-                t.minus(o0110).modded(Vec4.splat(0.5).minus(o0110).signOf().compProd(period)),
+                t.minus(o0110).modded(Vec4.splat(0.5).minus(o0110).signOf().timesComps(period)),
             );
             const s1110 = perlinDotGrad4(
                 cell.plus(o1110).modded(period),
-                t.minus(o1110).modded(Vec4.splat(0.5).minus(o1110).signOf().compProd(period)),
+                t.minus(o1110).modded(Vec4.splat(0.5).minus(o1110).signOf().timesComps(period)),
             );
             const s0001 = perlinDotGrad4(
                 cell.plus(o0001).modded(period),
-                t.minus(o0001).modded(Vec4.splat(0.5).minus(o0001).signOf().compProd(period)),
+                t.minus(o0001).modded(Vec4.splat(0.5).minus(o0001).signOf().timesComps(period)),
             );
             const s1001 = perlinDotGrad4(
                 cell.plus(o1001).modded(period),
-                t.minus(o1001).modded(Vec4.splat(0.5).minus(o1001).signOf().compProd(period)),
+                t.minus(o1001).modded(Vec4.splat(0.5).minus(o1001).signOf().timesComps(period)),
             );
             const s0101 = perlinDotGrad4(
                 cell.plus(o0101).modded(period),
-                t.minus(o0101).modded(Vec4.splat(0.5).minus(o0101).signOf().compProd(period)),
+                t.minus(o0101).modded(Vec4.splat(0.5).minus(o0101).signOf().timesComps(period)),
             );
             const s1101 = perlinDotGrad4(
                 cell.plus(o1101).modded(period),
-                t.minus(o1101).modded(Vec4.splat(0.5).minus(o1101).signOf().compProd(period)),
+                t.minus(o1101).modded(Vec4.splat(0.5).minus(o1101).signOf().timesComps(period)),
             );
             const s0011 = perlinDotGrad4(
                 cell.plus(o0011).modded(period),
-                t.minus(o0011).modded(Vec4.splat(0.5).minus(o0011).signOf().compProd(period)),
+                t.minus(o0011).modded(Vec4.splat(0.5).minus(o0011).signOf().timesComps(period)),
             );
             const s1011 = perlinDotGrad4(
                 cell.plus(o1011).modded(period),
-                t.minus(o1011).modded(Vec4.splat(0.5).minus(o1011).signOf().compProd(period)),
+                t.minus(o1011).modded(Vec4.splat(0.5).minus(o1011).signOf().timesComps(period)),
             );
             const s0111 = perlinDotGrad4(
                 cell.plus(o0111).modded(period),
-                t.minus(o0111).modded(Vec4.splat(0.5).minus(o0111).signOf().compProd(period)),
+                t.minus(o0111).modded(Vec4.splat(0.5).minus(o0111).signOf().timesComps(period)),
             );
             const s1111 = perlinDotGrad4(
                 cell.plus(o1111).modded(period),
-                t.minus(o1111).modded(Vec4.splat(0.5).minus(o1111).signOf().compProd(period)),
+                t.minus(o1111).modded(Vec4.splat(0.5).minus(o1111).signOf().timesComps(period)),
             );
 
             // Perform quadlinear interpolation with a smootherstep factor
@@ -923,7 +923,7 @@ test voronoiF1F2 {
         voronoiF1F2(Vec2{ .x = 0.0, .y = 0.0 }).dist2[1],
     );
     try std.testing.expectEqual(
-        7.610585e-1,
+        7.6105857e-1,
         voronoiF1F2(Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 }).dist2[1],
     );
     try std.testing.expectEqual(

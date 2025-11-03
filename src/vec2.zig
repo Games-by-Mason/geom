@@ -301,9 +301,9 @@ pub const Vec2 = extern struct {
 
     /// Returns the vector renormalized. Assumes the input is already near normal.
     pub fn renormalized(self: Vec2) Vec2 {
-        const len = self.mag();
-        if (len == 0) return self;
-        return self.scaled(1.0 / len);
+        const mag_sq = self.magSq();
+        if (mag_sq == 0) return self;
+        return self.scaled(geom.invSqrtNearOne(mag_sq));
     }
 
     test renormalized {
@@ -315,7 +315,7 @@ pub const Vec2 = extern struct {
 
     /// Renormalizes the vector. See `renormalized`.
     pub fn renormalize(self: *Vec2) void {
-        self.* = self.normalized();
+        self.* = self.renormalized();
     }
 
     test renormalize {
@@ -328,9 +328,9 @@ pub const Vec2 = extern struct {
     /// Returns the vector normalized. If the vector is `.zero`, it is returned unchanged. If your
     /// input is nearly normal already, consider using `renormalize` instead.
     pub fn normalized(self: Vec2) Vec2 {
-        const len = self.mag();
-        if (len == 0) return self;
-        return self.scaled(1.0 / len);
+        const mag_sq = self.magSq();
+        if (mag_sq == 0) return self;
+        return self.scaled(geom.invSqrt(mag_sq));
     }
 
     test normalized {
@@ -354,32 +354,56 @@ pub const Vec2 = extern struct {
         try std.testing.expectEqual(Vec2.zero, v);
     }
 
-    /// Returns the component wise product of two vectors.
-    pub fn compProd(self: Vec2, other: Vec2) Vec2 {
+    /// Returns the componentwise product of two vectors.
+    pub fn timesComps(self: Vec2, other: Vec2) Vec2 {
         return .{
             .x = self.x * other.x,
             .y = self.y * other.y,
         };
     }
 
-    test compProd {
+    test timesComps {
         const a: Vec2 = .{ .x = 2, .y = 3 };
         const b: Vec2 = .{ .x = 4, .y = 5 };
-        try std.testing.expectEqual(Vec2{ .x = 8, .y = 15 }, a.compProd(b));
+        try std.testing.expectEqual(Vec2{ .x = 8, .y = 15 }, a.timesComps(b));
     }
 
-    /// Returns the component wise division of two vectors.
-    pub fn compDiv(self: Vec2, other: Vec2) Vec2 {
+    /// Multiplies `self` componentwise by `other`.
+    pub fn mulComps(self: *Vec2, other: Vec2) void {
+        self.* = self.timesComps(other);
+    }
+
+    test mulComps {
+        var a: Vec2 = .{ .x = 2, .y = 3 };
+        const b: Vec2 = .{ .x = 4, .y = 5 };
+        a.mulComps(b);
+        try std.testing.expectEqual(Vec2{ .x = 8, .y = 15 }, a);
+    }
+
+    /// Returns the componentwise division of two vectors.
+    pub fn compOver(self: Vec2, other: Vec2) Vec2 {
         return .{
             .x = self.x / other.x,
             .y = self.y / other.y,
         };
     }
 
-    test compDiv {
+    test compOver {
         const a: Vec2 = .{ .x = 2, .y = 3 };
         const b: Vec2 = .{ .x = 4, .y = 5 };
-        try std.testing.expectEqual(Vec2{ .x = 0.5, .y = 0.6 }, a.compDiv(b));
+        try std.testing.expectEqual(Vec2{ .x = 0.5, .y = 0.6 }, a.compOver(b));
+    }
+
+    /// Divides `self` componentwise by `other`.
+    pub fn compDiv(self: *Vec2, other: Vec2) void {
+        self.* = self.compOver(other);
+    }
+
+    test compDiv {
+        var a: Vec2 = .{ .x = 2, .y = 3 };
+        const b: Vec2 = .{ .x = 4, .y = 5 };
+        a.compDiv(b);
+        try std.testing.expectEqual(Vec2{ .x = 0.5, .y = 0.6 }, a);
     }
 
     /// Returns the inner product of two vectors. Equivalent to the dot product.
@@ -397,21 +421,21 @@ pub const Vec2 = extern struct {
     /// an oriented area.
     pub fn outerProd(lhs: Vec2, rhs: Vec2) Bivec2 {
         return .{
-            .xy = @mulAdd(f32, lhs.x, rhs.y, -rhs.x * lhs.y),
+            .yx = @mulAdd(f32, -lhs.x, rhs.y, rhs.x * lhs.y),
         };
     }
 
     test outerProd {
         const a: Vec2 = .x_pos;
         const b: Vec2 = .y_pos;
-        try std.testing.expectEqual(Bivec2{ .xy = 1.0 }, a.outerProd(b));
+        try std.testing.expectEqual(Bivec2{ .yx = -1.0 }, a.outerProd(b));
     }
 
     /// Returns the geometric product of two vectors. This is an intermediate step in creating a
     /// usable rotor, it's more likely that you want `Rotor2.fromTo`.
     pub fn geomProd(lhs: Vec2, rhs: Vec2) Rotor2 {
         return .{
-            .xy = lhs.outerProd(rhs).xy,
+            .yx = lhs.outerProd(rhs).yx,
             .a = lhs.innerProd(rhs) + 1.0,
         };
     }
@@ -419,7 +443,7 @@ pub const Vec2 = extern struct {
     test geomProd {
         const a: Vec2 = .x_pos;
         const b: Vec2 = .y_pos;
-        try std.testing.expectEqual(Rotor2{ .xy = 1.0, .a = 1.0 }, a.geomProd(b));
+        try std.testing.expectEqual(Rotor2{ .yx = -1.0, .a = 1.0 }, a.geomProd(b));
     }
 
     /// Returns the normal to the vector CW from the input. Assumes the vector is already
@@ -456,6 +480,21 @@ pub const Vec2 = extern struct {
     test dir {
         var v: Vec2 = .{ .x = 1, .y = 2 };
         try std.testing.expectEqual(Vec3{ .x = 1, .y = 2, .z = 0.0 }, v.dir());
+    }
+
+    pub fn withZ(self: Vec2, z: f32) Vec3 {
+        return .{
+            .x = self.x,
+            .y = self.y,
+            .z = z,
+        };
+    }
+
+    test withZ {
+        try std.testing.expectEqual(
+            Vec3{ .x = 1, .y = 2, .z = 3 },
+            (Vec2{ .x = 1, .y = 2 }).withZ(3),
+        );
     }
 
     pub fn clamped(self: Vec2, min: Vec2, max: Vec2) @This() {
@@ -511,5 +550,17 @@ pub const Vec2 = extern struct {
             v.clamp(.{ .x = 2, .y = 4 }, .{ .x = 10, .y = 20 });
             try std.testing.expectEqual(Vec2{ .x = 3, .y = 10 }, v);
         }
+    }
+
+    /// Converts a homogeneous `Vec2` into a Cartesian scalar by dividing by `y`.
+    pub fn toCartesian(self: Vec2) f32 {
+        return self.x / self.y;
+    }
+
+    test toCartesian {
+        try std.testing.expectEqual(
+            5,
+            (Vec2{ .x = 10, .y = 2 }).toCartesian(),
+        );
     }
 };

@@ -13,17 +13,17 @@ const lerp = tween.interp.lerp;
 /// rotation. Unlike quaternions, rotors generalize to all dimensions. Rotors can represent up to
 /// two full rotations, at which point they wrap back around.
 pub const Rotor2 = extern struct {
-    /// The component that rotates from x to y along the xy plane.
+    /// The component that rotates from y to x along the yx plane.
     ///
-    /// Equivalent to the negative sine of half the rotation.
-    xy: f32,
+    /// Equivalent to the sine of half the rotation.
+    yx: f32,
     /// The scalar component.
     ///
     /// Equivalent to the cosine of half the rotation.
     a: f32,
 
     /// The identity rotor. Has no effect.
-    pub const identity: Rotor2 = .{ .xy = 0.0, .a = 1.0 };
+    pub const identity: Rotor2 = .{ .yx = 0.0, .a = 1.0 };
 
     /// Checks for equality.
     pub fn eql(self: Rotor2, other: Rotor2) bool {
@@ -43,7 +43,7 @@ pub const Rotor2 = extern struct {
         const result = from.geomProd(to);
         const res_mag_sq = result.magSq();
         if (res_mag_sq == 0.0) {
-            return .{ .xy = -1, .a = 0.0 };
+            return .{ .yx = 1, .a = 0.0 };
         } else {
             return result.scaledComps(geom.invSqrt(res_mag_sq));
         }
@@ -127,7 +127,7 @@ pub const Rotor2 = extern struct {
     /// rotation.
     pub fn scaledComps(self: Rotor2, factor: f32) Rotor2 {
         return .{
-            .xy = self.xy * factor,
+            .yx = self.yx * factor,
             .a = self.a * factor,
         };
     }
@@ -135,7 +135,7 @@ pub const Rotor2 = extern struct {
     test scaledComps {
         const r: Rotor2 = .identity;
         const r2 = r.scaledComps(2.0);
-        try std.testing.expectEqual(Rotor2{ .xy = r.xy * 2.0, .a = r.a * 2.0 }, r2);
+        try std.testing.expectEqual(Rotor2{ .yx = r.yx * 2.0, .a = r.a * 2.0 }, r2);
     }
 
     /// Scales the rotor's components by the given factor. This does not scale the rotation.
@@ -146,7 +146,7 @@ pub const Rotor2 = extern struct {
     test scaleComps {
         var r: Rotor2 = .identity;
         r.scaleComps(2.0);
-        try std.testing.expectEqual(Rotor2{ .xy = 0.0, .a = 2.0 }, r);
+        try std.testing.expectEqual(Rotor2{ .yx = 0.0, .a = 2.0 }, r);
     }
 
     /// Creates a rotor that from the given angle. Prefer `fromTo` when not operating on human
@@ -155,7 +155,7 @@ pub const Rotor2 = extern struct {
     /// Angles greater than 2PI wrap.
     pub fn fromAngle(rad: f32) Rotor2 {
         return .{
-            .xy = -@sin(rad / 2.0),
+            .yx = @sin(rad / 2.0),
             .a = @cos(rad / 2.0),
         };
     }
@@ -189,17 +189,17 @@ pub const Rotor2 = extern struct {
 
         // Check field values
         try expectRotor2ApproxEql(
-            Rotor2{ .a = 0.924, .xy = -0.383 },
+            Rotor2{ .a = 0.924, .yx = 0.383 },
             .fromAngle(std.math.pi / 4.0),
         );
 
         try expectRotor2ApproxEql(
-            Rotor2{ .xy = 0.0, .a = 1.0 },
+            Rotor2{ .yx = 0.0, .a = 1.0 },
             .fromAngle(0.0),
         );
 
         try expectRotor2ApproxEql(
-            Rotor2{ .xy = -@sin(0.5 / 2.0), .a = @cos(0.5 / 2.0) },
+            Rotor2{ .yx = @sin(0.5 / 2.0), .a = @cos(0.5 / 2.0) },
             .fromAngle(0.5),
         );
     }
@@ -207,7 +207,7 @@ pub const Rotor2 = extern struct {
     /// Returns the angle of rotation. Useful for human readable output, use for logic is
     /// discouraged. Angles greater than 2PI wrap.
     pub fn toAngle(self: Rotor2) f32 {
-        return 2.0 * std.math.atan2(-self.xy, self.a);
+        return 2.0 * std.math.atan2(self.yx, self.a);
     }
 
     test toAngle {
@@ -216,11 +216,11 @@ pub const Rotor2 = extern struct {
 
     /// Returns the squared magnitude of the rotor.
     pub fn magSq(self: Rotor2) f32 {
-        return @mulAdd(f32, self.xy, self.xy, self.a * self.a);
+        return @mulAdd(f32, self.yx, self.yx, self.a * self.a);
     }
 
     test magSq {
-        const r: Rotor2 = .{ .xy = 2.0, .a = 3.0 };
+        const r: Rotor2 = .{ .yx = 2.0, .a = 3.0 };
         try std.testing.expectEqual(13.0, r.magSq());
     }
 
@@ -231,22 +231,22 @@ pub const Rotor2 = extern struct {
     }
 
     test mag {
-        const r: Rotor2 = .{ .xy = 2.0, .a = 3.0 };
+        const r: Rotor2 = .{ .yx = 2.0, .a = 3.0 };
         try std.testing.expectEqual(3.605551275463989, r.mag());
     }
 
     /// Returns the inverse rotation. Not to be confused with `negate`.
     pub fn inverse(self: Rotor2) Rotor2 {
         return .{
-            .xy = -self.xy,
+            .yx = -self.yx,
             .a = self.a,
         };
     }
 
     test inverse {
-        const r: Rotor2 = .{ .xy = 2.0, .a = 3.0 };
+        const r: Rotor2 = .{ .yx = 2.0, .a = 3.0 };
         const ri = r.inverse();
-        try std.testing.expectEqual(Rotor2{ .xy = -r.xy, .a = r.a }, ri);
+        try std.testing.expectEqual(Rotor2{ .yx = -r.yx, .a = r.a }, ri);
     }
 
     /// Inverts the rotation.
@@ -255,22 +255,22 @@ pub const Rotor2 = extern struct {
     }
 
     test invert {
-        var r: Rotor2 = .{ .xy = 2.0, .a = 3.0 };
+        var r: Rotor2 = .{ .yx = 2.0, .a = 3.0 };
         r.invert();
-        try std.testing.expectEqual(Rotor2{ .xy = -2.0, .a = 3.0 }, r);
+        try std.testing.expectEqual(Rotor2{ .yx = -2.0, .a = 3.0 }, r);
     }
 
     /// Not to be confused with `inverse`. Adds a full rotation to the given rotor, flipping its
     /// neighborhood. Agnostic to normalization.
     pub fn negated(self: Rotor2) Rotor2 {
         return .{
-            .xy = -self.xy,
+            .yx = -self.yx,
             .a = -self.a,
         };
     }
 
     test negated {
-        try std.testing.expectEqual(Rotor2{ .xy = 0, .a = -1.0 }, Rotor2.identity.negated());
+        try std.testing.expectEqual(Rotor2{ .yx = 0, .a = -1.0 }, Rotor2.identity.negated());
     }
 
     /// Negates the rotor, see `negated`.
@@ -281,13 +281,13 @@ pub const Rotor2 = extern struct {
     test negate {
         var r: Rotor2 = .identity;
         r.negate();
-        try std.testing.expectEqual(Rotor2{ .xy = 0, .a = -1.0 }, r);
+        try std.testing.expectEqual(Rotor2{ .yx = 0, .a = -1.0 }, r);
     }
 
     /// Returns the cosine of the half angle between the two given normalized rotors. If the result
     /// is negative, they are more than a full rotation apart. If it is positive they are not.
     pub fn neighborhood(self: Rotor2, other: Rotor2) f32 {
-        return @mulAdd(f32, self.xy, other.xy, self.a * self.a);
+        return @mulAdd(f32, self.yx, other.yx, self.a * self.a);
     }
 
     test neighborhood {
@@ -300,9 +300,9 @@ pub const Rotor2 = extern struct {
     }
 
     test renormalized {
-        var r: Rotor2 = .{ .a = 1.05, .xy = 0.0 };
+        var r: Rotor2 = .{ .a = 1.05, .yx = 0.0 };
         r = r.renormalized();
-        try std.testing.expectEqual(0.0, r.xy);
+        try std.testing.expectEqual(0.0, r.yx);
         try std.testing.expectApproxEqAbs(1.0, r.a, 0.01);
     }
 
@@ -312,9 +312,9 @@ pub const Rotor2 = extern struct {
     }
 
     test renormalize {
-        var r: Rotor2 = .{ .a = 1.05, .xy = 0.0 };
+        var r: Rotor2 = .{ .a = 1.05, .yx = 0.0 };
         r.renormalize();
-        try std.testing.expectEqual(0.0, r.xy);
+        try std.testing.expectEqual(0.0, r.yx);
         try std.testing.expectApproxEqAbs(1.0, r.a, 0.01);
     }
 
@@ -325,9 +325,9 @@ pub const Rotor2 = extern struct {
     }
 
     test normalized {
-        var r: Rotor2 = .{ .a = 10.0, .xy = 0.0 };
+        var r: Rotor2 = .{ .a = 10.0, .yx = 0.0 };
         r = r.normalized();
-        try std.testing.expectEqual(0.0, r.xy);
+        try std.testing.expectEqual(0.0, r.yx);
         try std.testing.expectEqual(1.0, r.a);
     }
 
@@ -337,22 +337,22 @@ pub const Rotor2 = extern struct {
     }
 
     test normalize {
-        var r: Rotor2 = .{ .a = 10.0, .xy = 0.0 };
+        var r: Rotor2 = .{ .a = 10.0, .yx = 0.0 };
         r.normalize();
-        try std.testing.expectEqual(0.0, r.xy);
+        try std.testing.expectEqual(0.0, r.yx);
         try std.testing.expectEqual(1.0, r.a);
     }
 
     /// Applies the rotor to a vector.
     pub fn timesVec2(self: Rotor2, point: Vec2) Vec2 {
-        // temp = -rotor * point
-        const x = @mulAdd(f32, self.a, point.x, -self.xy * point.y);
-        const y = @mulAdd(f32, self.a, point.y, self.xy * point.x);
+        // temp = -rotor * point (results in trivector, stored as locals)
+        const x = @mulAdd(f32, self.a, point.x, self.yx * point.y);
+        const y = @mulAdd(f32, self.a, point.y, -self.yx * point.x);
 
         // temp * rotor
         return .{
-            .x = @mulAdd(f32, x, self.a, -y * self.xy),
-            .y = @mulAdd(f32, x, self.xy, y * self.a),
+            .x = @mulAdd(f32, x, self.a, y * self.yx),
+            .y = @mulAdd(f32, x, -self.yx, y * self.a),
         };
     }
 
@@ -363,8 +363,8 @@ pub const Rotor2 = extern struct {
     /// Returns the rotor multiplied by other. This lets you compose rotations. Order matters.
     pub fn times(self: Rotor2, other: Rotor2) Rotor2 {
         const result: Rotor2 = .{
-            .a = @mulAdd(f32, -self.xy, other.xy, self.a * other.a),
-            .xy = @mulAdd(f32, self.xy, other.a, self.a * other.xy),
+            .a = @mulAdd(f32, -self.yx, other.yx, self.a * other.a),
+            .yx = @mulAdd(f32, self.yx, other.a, self.a * other.yx),
         };
         return result.renormalized();
     }
@@ -393,8 +393,8 @@ pub const Rotor2 = extern struct {
         try expectRotor2ApproxEql(Rotor2.identity, xy_half.times(yx_half));
 
         // 180 degrees (the sign here is arbitrary for `fromTo` so we manually write out the result)
-        try expectRotor2ApproxEql(Rotor2{ .xy = -1.0, .a = 0.0 }, yx.times(yx));
-        try expectRotor2ApproxEql(Rotor2{ .xy = 1.0, .a = 0.0 }, xy.times(xy));
+        try expectRotor2ApproxEql(Rotor2{ .yx = 1.0, .a = 0.0 }, yx.times(yx));
+        try expectRotor2ApproxEql(Rotor2{ .yx = -1.0, .a = 0.0 }, xy.times(xy));
 
         // Increments of 45 degrees
         try expectRotor2ApproxEql(xy, xy_half.times(xy_half));
@@ -405,7 +405,7 @@ pub const Rotor2 = extern struct {
     /// rotation occurs on with a magnitude of half the angle of rotation in radians. The rotor must
     /// be normalized.
     pub fn ln(self: Rotor2) Bivec2 {
-        return .{ .xy = std.math.atan2(-self.xy, self.a) };
+        return .{ .yx = std.math.atan2(self.yx, self.a) };
     }
 
     test ln {
@@ -436,7 +436,7 @@ pub const Rotor2 = extern struct {
         try testLnVsFromAngle(yx, -2.0 * pi);
 
         // Test a rotor that wasn't exactly normalized correctly (this used to result in NaN)
-        try std.testing.expectEqual(Bivec2{ .xy = 0.0 }, (Rotor2{ .xy = 0.0, .a = 1.0000001 }).ln());
+        try std.testing.expectEqual(Bivec2{ .yx = 0.0 }, (Rotor2{ .yx = 0.0, .a = 1.0000001 }).ln());
     }
 
     /// Spherically linearly interpolates between two rotors. See also `nlerp`.
@@ -473,7 +473,7 @@ pub const Rotor2 = extern struct {
 };
 
 fn expectRotor2ApproxEql(expected: Rotor2, actual: Rotor2) !void {
-    try std.testing.expectApproxEqAbs(expected.xy, actual.xy, 0.01);
+    try std.testing.expectApproxEqAbs(expected.yx, actual.yx, 0.01);
     try std.testing.expectApproxEqAbs(expected.a, actual.a, 0.01);
 }
 
@@ -483,10 +483,10 @@ fn expectVec2ApproxEql(expected: Vec2, actual: Vec2) !void {
 }
 
 fn testLnVsFromAngle(plane: Bivec2, angle: f32) !void {
-    const actual: Bivec2 = Rotor2.fromAngle(if (plane.xy < 0.0) -angle else angle).ln();
+    const actual: Bivec2 = Rotor2.fromAngle(if (plane.yx < 0.0) -angle else angle).ln();
     const expected: Bivec2 = plane.scaled(angle / 2.0);
     if (@abs(angle) == 2 * std.math.pi) {
-        try std.testing.expectApproxEqAbs(std.math.pi, @abs(actual.xy), 0.01);
+        try std.testing.expectApproxEqAbs(std.math.pi, @abs(actual.yx), 0.01);
     } else {
         try std.testing.expectEqual(actual, expected);
     }
@@ -495,7 +495,7 @@ fn testLnVsFromAngle(plane: Bivec2, angle: f32) !void {
 fn testInterpolation(large_angles: bool, interp: *const fn (Rotor2, Rotor2, f32) Rotor2) !void {
     const pi = std.math.pi;
     const r_0: Rotor2 = .identity;
-    const r_yx180: Rotor2 = .fromAngle(-pi);
+    const r_xy180: Rotor2 = .fromAngle(pi);
     const r_xy90: Rotor2 = .fromAngle(pi / 4.0);
     const r_yx90: Rotor2 = .fromAngle(-pi / 4.0);
     const r_xy270: Rotor2 = .fromAngle(3.0 * pi / 4.0);
@@ -549,7 +549,7 @@ fn testInterpolation(large_angles: bool, interp: *const fn (Rotor2, Rotor2, f32)
         if (large_angles) {
             // The direction is arbitrary in this case since there's no shortest path, but we do get
             // half of the full turn as expected!
-            try std.testing.expectEqual(r_yx180, interp(start, end, 0.5));
+            try std.testing.expectEqual(r_xy180, interp(start, end, 0.5));
 
             // Slerp is approximate here unlike nlerp
             try expectRotor2ApproxEql(end, interp(start, end, 1.0));

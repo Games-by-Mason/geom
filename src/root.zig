@@ -7,9 +7,16 @@ pub const Vec2 = @import("vec2.zig").Vec2;
 pub const Vec3 = @import("vec3.zig").Vec3;
 pub const Vec4 = @import("vec4.zig").Vec4;
 pub const Bivec2 = @import("bivec2.zig").Bivec2;
+pub const Bivec3 = @import("bivec3.zig").Bivec3;
 pub const Rotor2 = @import("rotor2.zig").Rotor2;
+pub const Rotor3 = @import("rotor3.zig").Rotor3;
+pub const Mat2 = @import("mat2.zig").Mat2;
 pub const Mat2x3 = @import("mat2x3.zig").Mat2x3;
+pub const Mat3 = @import("mat3.zig").Mat3;
+pub const Mat3x4 = @import("mat3x4.zig").Mat3x4;
+pub const Mat4 = @import("mat4.zig").Mat4;
 pub const Frustum2 = @import("frustum2.zig").Frustum2;
+pub const Frustum3 = @import("frustum3.zig").Frustum3;
 
 pub const constants = @import("constants.zig");
 pub const hash = @import("hash.zig");
