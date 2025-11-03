@@ -608,6 +608,16 @@ pub const Mat4 = extern struct {
         );
     }
 
+    /// Gets the scale of the matrix.
+    pub fn getScale(self: @This()) Vec3 {
+        return .{ .x = self.r0.x, .y = self.r1.y, .z = self.r2.z };
+    }
+
+    test getScale {
+        const s: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        try std.testing.expectEqual(s, scale(s).getScale());
+    }
+
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec3) Vec3 {
         // Inlining this to remove the multiplication by one doesn't improve benchmark performance.
@@ -737,6 +747,43 @@ pub const Mat4 = extern struct {
             .times(rotation(.fromTo(.{ .x = -9, .y = 10, .z = 11 }, .{ .x = -11, .y = 12, .z = 13 })));
         var i = m;
         i.invertRt();
+        try expectMat4ApproxEq(identity, m.times(i));
+    }
+
+    /// Returns the inverse of a translate scale matrix. Useful for inverting orthographic
+    /// projections.
+    pub fn inverseTs(self: Mat4) Mat4 {
+        return .fromAffine(self.toAffine().inverseTs());
+    }
+
+    test inverseTs {
+        const m = orthoFromFrustum(.{
+            .left = -2.5,
+            .right = 0.3,
+            .top = 4.1,
+            .bottom = -2.2,
+            .near = 0.15,
+            .far = 3.2,
+        });
+        try expectMat4ApproxEq(identity, m.times(m.inverseTs()));
+    }
+
+    /// Inverts a translate scale matrix. Useful for inverting orthographic projections.
+    pub fn invertTs(self: *Mat4) void {
+        self.* = self.inverseTs();
+    }
+
+    test invertTs {
+        const m = orthoFromFrustum(.{
+            .left = -2.5,
+            .right = 0.3,
+            .top = 4.1,
+            .bottom = -2.2,
+            .near = 0.15,
+            .far = 3.2,
+        });
+        var i = m;
+        i.invertTs();
         try expectMat4ApproxEq(identity, m.times(i));
     }
 };

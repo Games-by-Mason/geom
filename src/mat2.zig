@@ -225,6 +225,16 @@ pub const Mat2 = extern struct {
         try std.testing.expectEqual(std.math.pi / 2.0, r.getRotation());
     }
 
+    /// Gets the scale of the matrix.
+    pub fn getScale(self: @This()) Vec2 {
+        return .{ .x = self.r0.x, .y = self.r1.y };
+    }
+
+    test getScale {
+        const s: Vec2 = .{ .x = 2, .y = 3 };
+        try std.testing.expectEqual(s, scale(s).getScale());
+    }
+
     /// Multiplies the matrix by a homogeneous vec3.
     pub fn timesVec2(self: @This(), v: Vec2) Vec2 {
         return .{

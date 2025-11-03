@@ -417,6 +417,16 @@ pub const Mat2x3 = extern struct {
         try std.testing.expectEqual(Vec2{ .x = 1, .y = 2 }, r.getTranslation());
     }
 
+    /// Gets the scale of the matrix.
+    pub fn getScale(self: @This()) Vec2 {
+        return .{ .x = self.r0.x, .y = self.r1.y };
+    }
+
+    test getScale {
+        const s: Vec2 = .{ .x = 2, .y = 3 };
+        try std.testing.expectEqual(s, scale(s).getScale());
+    }
+
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec2) Vec2 {
         // The missing FMAs are intentional, adding them reduces benchmark performance slightly on
@@ -549,6 +559,44 @@ pub const Mat2x3 = extern struct {
             .times(rotation(.fromTo(.{ .x = -9, .y = 10 }, .{ .x = -11, .y = 12 })));
         var i = m;
         i.invertRt();
+        try expectMat2x3ApproxEq(identity, m.times(i));
+    }
+
+    /// Returns the inverse of a translate scale matrix. Useful for inverting orthographic
+    /// projections.
+    pub fn inverseTs(self: Mat2x3) Mat2x3 {
+        const t = self.getTranslation();
+        const s = self.getScale();
+        return .{
+            .r0 = .{ .x = 1.0 / s.x, .y = 0, .z = -t.x / s.x },
+            .r1 = .{ .x = 0, .y = 1.0 / s.y, .z = -t.y / s.y },
+        };
+    }
+
+    test inverseTs {
+        const m = orthoFromFrustum(.{
+            .left = -2.5,
+            .right = 0.3,
+            .top = 4.1,
+            .bottom = -2.2,
+        });
+        try expectMat2x3ApproxEq(identity, m.times(m.inverseTs()));
+    }
+
+    /// Inverts a translate scale matrix. Useful for inverting orthographic projections.
+    pub fn invertTs(self: *Mat2x3) void {
+        self.* = self.inverseTs();
+    }
+
+    test invertTs {
+        const m = orthoFromFrustum(.{
+            .left = -2.5,
+            .right = 0.3,
+            .top = 4.1,
+            .bottom = -2.2,
+        });
+        var i = m;
+        i.invertTs();
         try expectMat2x3ApproxEq(identity, m.times(i));
     }
 };

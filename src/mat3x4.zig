@@ -528,6 +528,16 @@ pub const Mat3x4 = extern struct {
         );
     }
 
+    /// Gets the scale of the matrix.
+    pub fn getScale(self: @This()) Vec3 {
+        return .{ .x = self.r0.x, .y = self.r1.y, .z = self.r2.z };
+    }
+
+    test getScale {
+        const s: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+        try std.testing.expectEqual(s, scale(s).getScale());
+    }
+
     /// Returns a vector representing a point transformed by this matrix.
     pub fn timesPoint(self: @This(), v: Vec3) Vec3 {
         // This is as fast in the benchmarks than my attempt to inline and hand optimize it.
@@ -666,6 +676,49 @@ pub const Mat3x4 = extern struct {
             .times(rotation(.fromTo(.{ .x = -9, .y = 10, .z = 11 }, .{ .x = -11, .y = 12, .z = 13 })));
         var i = m;
         i.invertRt();
+        try expectMat3x4ApproxEq(identity, m.times(i));
+    }
+
+    /// Returns the inverse of a translate scale matrix. Useful for inverting orthographic
+    /// projections.
+    pub fn inverseTs(self: Mat3x4) Mat3x4 {
+        const t = self.getTranslation();
+        const s = self.getScale();
+        return .{
+            .r0 = .{ .x = 1.0 / s.x, .y = 0, .z = 0, .w = -t.x / s.x },
+            .r1 = .{ .x = 0, .y = 1.0 / s.y, .z = 0, .w = -t.y / s.y },
+            .r2 = .{ .x = 0, .y = 0, .z = 1.0 / s.z, .w = -t.z / s.z },
+        };
+    }
+
+    test inverseTs {
+        const m = orthoFromFrustum(.{
+            .left = -2.5,
+            .right = 0.3,
+            .top = 4.1,
+            .bottom = -2.2,
+            .near = 0.15,
+            .far = 3.2,
+        });
+        try expectMat3x4ApproxEq(identity, m.times(m.inverseTs()));
+    }
+
+    /// Inverts a translate scale matrix. Useful for inverting orthographic projections.
+    pub fn invertTs(self: *Mat3x4) void {
+        self.* = self.inverseTs();
+    }
+
+    test invertTs {
+        const m = orthoFromFrustum(.{
+            .left = -2.5,
+            .right = 0.3,
+            .top = 4.1,
+            .bottom = -2.2,
+            .near = 0.15,
+            .far = 3.2,
+        });
+        var i = m;
+        i.invertTs();
         try expectMat3x4ApproxEq(identity, m.times(i));
     }
 };
