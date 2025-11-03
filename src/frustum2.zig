@@ -15,7 +15,7 @@ pub const Frustum2 = extern struct {
 
     /// Undoes the orthographic projection specified by the given frustum on the given normalized
     /// device coordinate to get back a point in view space. See also `inverseTs`.
-    fn unprojectOrtho(f: Frustum2, ndc: Vec2) Vec2 {
+    pub fn unprojectOrtho(f: Frustum2, ndc: Vec2) Vec2 {
         return .{
             .x = remap(-1, 1, f.left, f.right, ndc.x),
             .y = remap(-1, 1, f.top, f.bottom, ndc.y),
@@ -32,7 +32,7 @@ pub const Frustum2 = extern struct {
         const proj = Mat3.orthoFromFrustum(f);
         const p_view: Vec2 = .{ .x = 1, .y = 2 };
         const p_ndc = proj.timesPoint(p_view);
-        const un = unprojectOrtho(f, p_ndc);
+        const un = f.unprojectOrtho(p_ndc);
         try expectVec2ApproxEql(p_view, un);
     }
 };
