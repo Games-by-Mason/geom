@@ -38,7 +38,8 @@ pub const Rotor2 = extern struct {
     /// Creates a rotor that rotates along the shortest path from `from` to `to`. `from` and `to`
     /// must be normalized.
     ///
-    /// If `from` and to are parallel in opposite directions, the tie is broken arbitrarily.
+    /// If `from` and to are parallel in opposite directions, the tie is broken arbitrarily. If
+    /// either vector are zero length, the unit rotor is returned.
     pub fn fromTo(from: Vec2, to: Vec2) Rotor2 {
         const result = from.geomProd(to);
         const res_mag_sq = result.magSq();
@@ -50,6 +51,11 @@ pub const Rotor2 = extern struct {
     }
 
     test fromTo {
+        // Test the degenerate case of zero length vectors
+        try std.testing.expectEqual(identity, fromTo(.zero, .zero));
+        try std.testing.expectEqual(identity, fromTo(.zero, .{ .x = 1, .y = 2 }));
+        try std.testing.expectEqual(identity, fromTo(.{ .x = 1, .y = 2 }, .zero));
+
         // Test unit rotations
         try std.testing.expectEqual(0, Rotor2.fromTo(.x_pos, .x_pos).toAngle());
         try std.testing.expectEqual(0, Rotor2.fromTo(.x_neg, .x_neg).toAngle());
