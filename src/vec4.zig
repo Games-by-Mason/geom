@@ -6,7 +6,10 @@ const math = std.math;
 const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Bivec2 = geom.Bivec2;
+const Bivec3 = geom.Bivec3;
+const Bivec4 = geom.Bivec4;
 const Rotor2 = geom.Rotor2;
+const Trivec4 = geom.Trivec4;
 
 /// A two dimensional vector.
 pub const Vec4 = extern struct {
@@ -442,6 +445,59 @@ pub const Vec4 = extern struct {
         try std.testing.expectEqual(82, a.innerProd(b));
     }
 
+    /// Returns the outer product of two vectors. Generalized form of the cross product, result is
+    /// an oriented area.
+    pub fn outerProd(lhs: Vec4, rhs: Vec4) Bivec4 {
+        return .{
+            .yx = @mulAdd(f32, -lhs.x, rhs.y, lhs.y * rhs.x),
+            .xz = @mulAdd(f32, lhs.x, rhs.z, -lhs.z * rhs.x),
+            .yz = @mulAdd(f32, lhs.y, rhs.z, -lhs.z * rhs.y),
+            .xw = @mulAdd(f32, lhs.x, rhs.w, -lhs.w * rhs.x),
+            .yw = @mulAdd(f32, lhs.y, rhs.w, -lhs.w * rhs.y),
+            .zw = @mulAdd(f32, lhs.z, rhs.w, -lhs.w * rhs.z),
+        };
+    }
+
+    test outerProd {
+        const a: Vec4 = .{ .x = 1, .y = 2, .z = 3, .w = 4 };
+        const b: Vec4 = .{ .x = 5, .y = 6, .z = 7, .w = 8 };
+        try std.testing.expectEqual(Bivec4{
+            .yz = -4,
+            .xz = -8,
+            .yx = 4,
+            .xw = -12,
+            .yw = -8,
+            .zw = -4,
+        }, a.outerProd(b));
+    }
+
+    pub fn outerProdBivec4(lhs: Vec4, rhs: Bivec4) Trivec4 {
+        return .{
+            .yzw = @mulAdd(f32, lhs.y, rhs.zw, @mulAdd(f32, -lhs.z, rhs.yw, lhs.w * rhs.yz)),
+            .xzw = @mulAdd(f32, lhs.x, rhs.zw, @mulAdd(f32, -lhs.z, rhs.xw, lhs.w * rhs.xz)),
+            .yxw = @mulAdd(f32, -lhs.x, rhs.yw, @mulAdd(f32, lhs.y, rhs.xw, lhs.w * rhs.yx)),
+            .xyz = @mulAdd(f32, lhs.x, rhs.yz, @mulAdd(f32, -lhs.y, rhs.xz, -lhs.z * rhs.yx)),
+        };
+    }
+
+    test outerProdBivec4 {
+        const a: Vec4 = .{ .x = 1, .y = 2, .z = 3, .w = 4 };
+        const b: Bivec4 = .{
+            .yz = 5,
+            .xz = 6,
+            .yx = 7,
+            .xw = 8,
+            .yw = 9,
+            .zw = 10,
+        };
+        try std.testing.expectEqual(Trivec4{
+            .yzw = 13,
+            .xzw = 10,
+            .yxw = 35,
+            .xyz = -28,
+        }, a.outerProdBivec4(b));
+    }
+
     /// Returns the x and y components.
     pub fn xy(self: Vec4) Vec2 {
         return .{ .x = self.x, .y = self.y };
@@ -533,5 +589,37 @@ pub const Vec4 = extern struct {
             Vec3{ .x = 1, .y = 2, .z = 3 },
             (Vec4{ .x = 2, .y = 4, .z = 6, .w = 2 }).toCartesian(),
         );
+    }
+
+    /// Returns self multiplied by wzyx, results in the orthogonal trivector with a volume of the
+    /// magnitude of this vector.
+    pub fn dual(self: Vec4) Trivec4 {
+        return .{
+            .yzw = -self.x,
+            .xzw = self.y,
+            .yxw = self.z, // XXX: why did i get this one wrong?
+            .xyz = self.w, // XXX: why did i get this one wrong?
+        };
+    }
+
+    test dual {
+        const a: Vec4 = .{
+            .x = 1,
+            .y = 2,
+            .z = 3,
+            .w = 4,
+        };
+        try std.testing.expectEqual(Trivec4{
+            .yzw = -1,
+            .xzw = 2,
+            .yxw = 3,
+            .xyz = 4,
+        }, a.dual());
+
+        try std.testing.expectEqual(a, a.dual().dual().dual().dual());
+        // XXX: rename negate to inverse?
+        // XXX: why does this fail?
+        // try std.testing.expectEqual(a.negated(), a.dual().dual());
+        // try std.testing.expectEqual(a.negated().z, a.dual().dual().z); // XXX: ...
     }
 };

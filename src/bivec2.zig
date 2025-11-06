@@ -5,8 +5,9 @@ const math = std.math;
 
 const Rotor2 = geom.Rotor2;
 const Vec2 = geom.Vec2;
+const Vec3 = geom.Vec3;
 
-/// An two dimensional oriented area.
+/// A two dimensional oriented area.
 pub const Bivec2 = extern struct {
     /// The area on the yx plane, incidentally the only plane in two dimensions. The sign represents
     /// the direction.
@@ -129,6 +130,16 @@ pub const Bivec2 = extern struct {
         try testExpVsAngle(yx_plane, 2.0 * math.pi);
         try testExpVsAngle(xy_plane, -2.0 * math.pi);
         try testExpVsAngle(xy_plane, 2.0 * math.pi);
+    }
+
+    /// Returns self multiplied by yx, results in a scalar with a magnitude of the oriented area.
+    pub fn dual(self: Bivec2) f32 {
+        return -self.yx;
+    }
+
+    test dual {
+        const a: Bivec2 = .{ .yx = 2 };
+        try std.testing.expectEqual(-2, a.dual());
     }
 };
 
