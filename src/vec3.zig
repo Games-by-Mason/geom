@@ -591,4 +591,25 @@ pub const Vec3 = extern struct {
             (Vec3{ .x = 10, .y = 20, .z = 2 }).toCartesian(),
         );
     }
+
+    /// Returns self multiplied by zyx, results in the orthogonal bivector with an area of the
+    /// magnitude of this vector.
+    pub fn dual(self: Vec3) Bivec3 {
+        return .{
+            .yz = -self.x,
+            .xz = self.y,
+            .yx = self.z,
+        };
+    }
+
+    test dual {
+        const a: Vec3 = .{
+            .x = 1,
+            .y = 2,
+            .z = 3,
+        };
+        try std.testing.expectEqual(Bivec3{ .yz = -1, .xz = 2, .yx = 3 }, a.dual());
+        try std.testing.expectEqual(a, a.dual().dual().dual().dual());
+        try std.testing.expectEqual(a.negated(), a.dual().dual());
+    }
 };

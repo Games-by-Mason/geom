@@ -9,6 +9,7 @@ const Bivec3 = geom.Bivec3;
 
 const lerp = tween.interp.lerp;
 
+// XXX: dual of this?
 /// A three dimensional rotor. Rotors are a generalized form of quaternions which are used for
 /// rotation. Unlike quaternions, rotors generalize to all dimensions. Rotors can represent up to
 /// two full rotations, at which point they wrap back around.

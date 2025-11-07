@@ -6,7 +6,7 @@ const math = std.math;
 const Rotor3 = geom.Rotor3;
 const Vec3 = geom.Vec3;
 
-/// An three dimensional oriented area.
+/// A three dimensional oriented area.
 pub const Bivec3 = extern struct {
     /// The area on the yz plane. The sign represents the direction.
     yz: f32,
@@ -222,6 +222,108 @@ pub const Bivec3 = extern struct {
         try testExpVsPlaneAngle(yx_plane, -2.0 * math.pi);
         try testExpVsPlaneAngle(xy_plane, 2.0 * math.pi);
         try testExpVsPlaneAngle(xy_plane, -2.0 * math.pi);
+    }
+
+    // XXX: name inverse vs negate?
+    /// Returns bivector negated.
+    pub fn negated(self: Bivec3) Bivec3 {
+        return self.scaled(-1);
+    }
+
+    test negated {
+        var v: Bivec3 = .{
+            .yz = 1,
+            .xz = 2,
+            .yx = 3,
+        };
+        v = v.negated();
+        try std.testing.expectEqual(Bivec3{
+            .yz = -1,
+            .xz = -2,
+            .yx = -3,
+        }, v);
+    }
+
+    /// Negates the bivector.
+    pub fn negate(self: *Bivec3) void {
+        self.* = self.negated();
+    }
+
+    test negate {
+        var v: Bivec3 = .{
+            .yz = 1,
+            .xz = 2,
+            .yx = 3,
+        };
+        v.negate();
+        try std.testing.expectEqual(Bivec3{
+            .yz = -1,
+            .xz = -2,
+            .yx = -3,
+        }, v);
+    }
+
+    /// Returns self multiplied by zyx, results in the orthogonal vector with a magnitude of the
+    /// oriented area.
+    pub fn dual(self: Bivec3) Vec3 {
+        return .{
+            .x = self.yz,
+            .y = -self.xz,
+            .z = -self.yx,
+        };
+    }
+
+    test dual {
+        const a: Bivec3 = .{
+            .yz = 1,
+            .xz = 2,
+            .yx = 3,
+        };
+        try std.testing.expectEqual(Vec3{ .x = 1, .y = -2, .z = -3 }, a.dual());
+        try std.testing.expectEqual(a, a.dual().dual().dual().dual());
+        try std.testing.expectEqual(a.negated(), a.dual().dual());
+    }
+
+    // XXX: document, test, implement for other types?
+    pub fn meet(lhs: Bivec3, rhs: Bivec3) Vec3 {
+        return lhs.join(rhs).dual();
+    }
+
+    test meet {
+        try std.testing.expectEqual(Vec3.zero, xy_plane.meet(xy_plane));
+        try std.testing.expectEqual(Vec3.zero, yx_plane.meet(yx_plane));
+        try std.testing.expectEqual(Vec3.zero, xy_plane.meet(xy_plane));
+        try std.testing.expectEqual(Vec3.zero, yx_plane.meet(xy_plane));
+
+        try std.testing.expectEqual(Vec3.x_pos, xy_plane.meet(xz_plane));
+        try std.testing.expectEqual(Vec3.x_pos, yx_plane.meet(zx_plane));
+        try std.testing.expectEqual(Vec3.x_neg, xy_plane.meet(zx_plane));
+        try std.testing.expectEqual(Vec3.x_neg, yx_plane.meet(xz_plane));
+
+        try std.testing.expectEqual(Vec3.y_pos, yz_plane.meet(yx_plane));
+        try std.testing.expectEqual(Vec3.y_pos, zy_plane.meet(xy_plane));
+        try std.testing.expectEqual(Vec3.y_neg, yz_plane.meet(xy_plane));
+        try std.testing.expectEqual(Vec3.y_neg, zy_plane.meet(yx_plane));
+
+        try std.testing.expectEqual(Vec3.z_pos, zx_plane.meet(zy_plane));
+        try std.testing.expectEqual(Vec3.z_pos, xz_plane.meet(yz_plane));
+        try std.testing.expectEqual(Vec3.z_neg, zx_plane.meet(yz_plane));
+        try std.testing.expectEqual(Vec3.z_neg, xz_plane.meet(zy_plane));
+    }
+
+    // XXX: document, test, implement for other types?
+    pub fn join(lhs: Bivec3, rhs: Bivec3) Bivec3 {
+        return lhs.dual().outerProd(rhs.dual());
+    }
+
+    test join {
+        try std.testing.expectEqual(zero, xy_plane.join(xy_plane));
+        try std.testing.expectEqual(zero, yx_plane.join(yx_plane));
+        try std.testing.expectEqual(zero, xy_plane.join(yx_plane));
+        try std.testing.expectEqual(zero, yx_plane.join(xy_plane));
+
+        try std.testing.expectEqual(zy_plane, xy_plane.join(zx_plane));
+        try std.testing.expectEqual(yz_plane, xy_plane.join(xz_plane));
     }
 };
 

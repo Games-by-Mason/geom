@@ -446,22 +446,6 @@ pub const Vec2 = extern struct {
         try std.testing.expectEqual(Rotor2{ .yx = -1.0, .a = 1.0 }, a.geomProd(b));
     }
 
-    /// Returns the normal to the vector CW from the input. Assumes the vector is already
-    /// normalized. If the vector is `.zero`, it is returned unchanged.
-    pub fn normal(self: Vec2) Vec2 {
-        return .{
-            .x = self.y,
-            .y = -self.x,
-        };
-    }
-
-    test normal {
-        var a: Vec2 = .{ .x = 1, .y = 2 };
-        a = a.normal();
-        try std.testing.expectEqual(Vec2{ .x = 2, .y = -1 }, a);
-        try std.testing.expectEqual(Vec2.zero, Vec2.normal(.zero));
-    }
-
     /// Returns the equivalent homogeneous point.
     pub fn point(self: Vec2) Vec3 {
         return .{ .x = self.x, .y = self.y, .z = 1.0 };
@@ -562,5 +546,24 @@ pub const Vec2 = extern struct {
             5,
             (Vec2{ .x = 10, .y = 2 }).toCartesian(),
         );
+    }
+
+    /// Returns self multiplied by yx, results in the normal vector with a magnitude the
+    /// magnitude of the input vector.
+    pub fn dual(self: Vec2) Vec2 {
+        return .{
+            .x = -self.y,
+            .y = self.x,
+        };
+    }
+
+    test dual {
+        const a: Vec2 = .{
+            .x = 1,
+            .y = 2,
+        };
+        try std.testing.expectEqual(Vec2{ .x = -2, .y = 1 }, a.dual());
+        try std.testing.expectEqual(a, a.dual().dual().dual().dual());
+        try std.testing.expectEqual(a.negated(), a.dual().dual());
     }
 };
