@@ -9,7 +9,7 @@ const Mat3 = geom.Mat3;
 const Mat4 = geom.Mat4;
 
 /// A 2 dimensional orthographic frustum.
-pub const OrthoFrustum2 = extern struct {
+pub const Frustum2 = extern struct {
     left: f32,
     right: f32,
     bottom: f32,
@@ -17,7 +17,7 @@ pub const OrthoFrustum2 = extern struct {
 
     /// Undoes the orthographic projection specified by the given frustum on the given normalized
     /// device coordinate to get back a point in view space. See also `inverseTs`.
-    pub fn unproject(f: OrthoFrustum2, ndc: Vec2) Vec2 {
+    pub fn unproject(f: Frustum2, ndc: Vec2) Vec2 {
         return .{
             .x = remap(-1, 1, f.left, f.right, ndc.x),
             .y = remap(-1, 1, f.top, f.bottom, ndc.y),
@@ -25,7 +25,7 @@ pub const OrthoFrustum2 = extern struct {
     }
 
     test unproject {
-        const f: OrthoFrustum2 = .{
+        const f: Frustum2 = .{
             .left = -2.5,
             .right = 0.3,
             .top = 4.1,
@@ -75,15 +75,9 @@ pub const OrthoFrustum3 = extern struct {
 };
 
 /// A 3 dimensional perspective frustum.
-pub const PerspectiveFrustum = extern struct {
-    /// The left extent at distance `focal_length`.
-    left: f32,
-    /// The right extent at distance `focal_length`.
-    right: f32,
-    /// The bottom extent at distance `focal_length`.
-    bottom: f32,
-    /// The top extent at distance `focal_length`.
-    top: f32,
+pub const PerspectiveFrustum3 = extern struct {
+    /// The extent at distance `focal_length`.
+    sensor: Frustum2,
     /// The near plane.
     near: f32,
     /// The far plane.
@@ -91,46 +85,13 @@ pub const PerspectiveFrustum = extern struct {
     /// The focal length.
     focal_length: f32,
 
-    pub fn ortho(self: PerspectiveFrustum) OrthoFrustum3 {
-        return .{
-            .left = self.left,
-            .right = self.right,
-            .bottom = self.bottom,
-            .top = self.top,
-            .near = self.near,
-            .far = self.far,
-        };
-    }
-
-    test ortho {
-        try std.testing.expectEqual(
-            OrthoFrustum3{
-                .left = 1,
-                .right = 2,
-                .bottom = 3,
-                .top = 4,
-                .near = 5,
-                .far = 6,
-            },
-            (PerspectiveFrustum{
-                .left = 1,
-                .right = 2,
-                .bottom = 3,
-                .top = 4,
-                .near = 5,
-                .far = 6,
-                .focal_length = 7,
-            }).ortho(),
-        );
-    }
-
     /// Undoes the perspective projection specified by the given frustum on the given normalized
     /// device coordinate to get back a point in view space at the specified depth.
-    pub fn unproject(self: PerspectiveFrustum, ndc: Vec2, view_z: f32) Vec3 {
+    pub fn unproject(self: PerspectiveFrustum3, ndc: Vec2, view_z: f32) Vec3 {
         const view_xy = ndc.scaled(view_z / self.focal_length);
         return .{
-            .x = remap(-1, 1, self.left, self.right, view_xy.x),
-            .y = remap(-1, 1, self.top, self.bottom, view_xy.y),
+            .x = remap(-1, 1, self.sensor.left, self.sensor.right, view_xy.x),
+            .y = remap(-1, 1, self.sensor.top, self.sensor.bottom, view_xy.y),
             .z = view_z,
         };
     }
@@ -139,11 +100,13 @@ pub const PerspectiveFrustum = extern struct {
 
         // Focal length of 1
         {
-            const f: PerspectiveFrustum = .{
-                .left = -2.5,
-                .right = 0.3,
-                .top = 4.1,
-                .bottom = -2.2,
+            const f: PerspectiveFrustum3 = .{
+                .sensor = .{
+                    .left = -2.5,
+                    .right = 0.3,
+                    .top = 4.1,
+                    .bottom = -2.2,
+                },
                 .near = 0.15,
                 .far = 3.2,
                 .focal_length = 1,
@@ -157,11 +120,13 @@ pub const PerspectiveFrustum = extern struct {
 
         // Focal length of 2
         {
-            const f: PerspectiveFrustum = .{
-                .left = -2.5,
-                .right = 0.3,
-                .top = 4.1,
-                .bottom = -2.2,
+            const f: PerspectiveFrustum3 = .{
+                .sensor = .{
+                    .left = -2.5,
+                    .right = 0.3,
+                    .top = 4.1,
+                    .bottom = -2.2,
+                },
                 .near = 0.15,
                 .far = 3.2,
                 .focal_length = 2,

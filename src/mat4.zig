@@ -10,7 +10,7 @@ const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
 const OrthoFrustum3 = geom.OrthoFrustum3;
-const PerspectiveFrustum = geom.PerspectiveFrustum;
+const PerspectiveFrustum3 = geom.PerspectiveFrustum3;
 const Mat3 = geom.Mat3;
 const Mat3x4 = geom.Mat3x4;
 
@@ -149,8 +149,15 @@ pub const Mat4 = extern struct {
 
     /// Returns an perspective projection matrix that converts from view space to Vulkan/DX12 clip
     /// space.
-    pub fn perspective(f: PerspectiveFrustum) Mat4 {
-        var p = ortho(f.ortho());
+    pub fn perspective(f: PerspectiveFrustum3) Mat4 {
+        var p = ortho(.{
+            .left = f.sensor.left,
+            .right = f.sensor.right,
+            .top = f.sensor.top,
+            .bottom = f.sensor.bottom,
+            .near = f.near,
+            .far = f.far,
+        });
         const z_sign: f32 = if (f.far > f.near) 1.0 else -1.0;
         p.r3.z = z_sign / f.focal_length;
         p.r3.w = 0;
@@ -159,28 +166,34 @@ pub const Mat4 = extern struct {
 
     test perspective {
         try testPerspective(.{
-            .left = -2.5,
-            .right = 0.2,
-            .top = 4.3,
-            .bottom = -2.9,
+            .sensor = .{
+                .left = -2.5,
+                .right = 0.2,
+                .top = 4.3,
+                .bottom = -2.9,
+            },
             .near = -1.35,
             .far = 2.1,
             .focal_length = 1.0,
         });
         try testPerspective(.{
-            .left = -2.5,
-            .right = 0.2,
-            .top = 4.3,
-            .bottom = -2.9,
+            .sensor = .{
+                .left = -2.5,
+                .right = 0.2,
+                .top = 4.3,
+                .bottom = -2.9,
+            },
             .near = -1.35,
             .far = 2.1,
             .focal_length = 2.0,
         });
         try testPerspective(.{
-            .left = -2.5,
-            .right = 0.2,
-            .top = 4.3,
-            .bottom = -2.9,
+            .sensor = .{
+                .left = -2.5,
+                .right = 0.2,
+                .top = 4.3,
+                .bottom = -2.9,
+            },
             .near = -1.35,
             .far = 2.1,
             .focal_length = 3.0,
@@ -816,7 +829,7 @@ fn expectVec4ApproxEql(expected: Vec4, actual: Vec4) !void {
     try std.testing.expectApproxEqAbs(expected.w, actual.w, 0.0001);
 }
 
-fn testPerspective(f: PerspectiveFrustum) !void {
+fn testPerspective(f: PerspectiveFrustum3) !void {
     // Create the matrix
     const m: Mat4 = .perspective(f);
 
@@ -831,7 +844,7 @@ fn testPerspective(f: PerspectiveFrustum) !void {
             // We want to apply `near / focal_length` perspective scaling
             .w = f.near / f.focal_length,
         },
-        m.timesVec4(.{ .x = f.left, .y = f.top, .z = f.near, .w = 1 }),
+        m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.top, .z = f.near, .w = 1 }),
     );
 
     // Test the upper left corner of the focal length plane
@@ -845,7 +858,7 @@ fn testPerspective(f: PerspectiveFrustum) !void {
             // Since we're at the focal length, there should be no perspective scaling
             .w = 1.0,
         },
-        m.timesVec4(.{ .x = f.left, .y = f.top, .z = f.focal_length, .w = 1 }),
+        m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.top, .z = f.focal_length, .w = 1 }),
     );
 
     // Test the center of the frustum
@@ -860,8 +873,8 @@ fn testPerspective(f: PerspectiveFrustum) !void {
             .w = lerp(f.near, f.far, 0.5) / f.focal_length,
         },
         m.timesVec4(.{
-            .x = lerp(f.left, f.right, 0.5),
-            .y = lerp(f.bottom, f.top, 0.5),
+            .x = lerp(f.sensor.left, f.sensor.right, 0.5),
+            .y = lerp(f.sensor.bottom, f.sensor.top, 0.5),
             .z = lerp(f.near, f.far, 0.5),
             .w = 1,
         }),
@@ -878,7 +891,7 @@ fn testPerspective(f: PerspectiveFrustum) !void {
             // the focal length is the less scaling we end up applying here
             .w = f.far / f.focal_length,
         },
-        m.timesVec4(.{ .x = f.right, .y = f.bottom, .z = f.far, .w = 1 }),
+        m.timesVec4(.{ .x = f.sensor.right, .y = f.sensor.bottom, .z = f.far, .w = 1 }),
     );
 
     // Test the bottom right corner of the far plane with the perspective divide applied. This is
@@ -889,6 +902,6 @@ fn testPerspective(f: PerspectiveFrustum) !void {
             .y = f.focal_length / f.far,
             .z = f.focal_length / f.far,
         },
-        m.timesPoint(.{ .x = f.right, .y = f.bottom, .z = f.far }),
+        m.timesPoint(.{ .x = f.sensor.right, .y = f.sensor.bottom, .z = f.far }),
     );
 }

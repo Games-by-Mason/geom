@@ -15,9 +15,9 @@ pub const Mat2x3 = @import("mat2x3.zig").Mat2x3;
 pub const Mat3 = @import("mat3.zig").Mat3;
 pub const Mat3x4 = @import("mat3x4.zig").Mat3x4;
 pub const Mat4 = @import("mat4.zig").Mat4;
-pub const OrthoFrustum2 = @import("frustum.zig").OrthoFrustum2;
+pub const Frustum2 = @import("frustum.zig").Frustum2;
 pub const OrthoFrustum3 = @import("frustum.zig").OrthoFrustum3;
-pub const PerspectiveFrustum = @import("frustum.zig").PerspectiveFrustum;
+pub const PerspectiveFrustum3 = @import("frustum.zig").PerspectiveFrustum3;
 
 pub const constants = @import("constants.zig");
 pub const hash = @import("hash.zig");
