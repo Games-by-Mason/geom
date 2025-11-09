@@ -9,7 +9,8 @@ const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
-const Frustum3 = geom.Frustum3;
+const OrthoFrustum3 = geom.OrthoFrustum3;
+const PerspectiveFrustum = geom.PerspectiveFrustum;
 const Mat3 = geom.Mat3;
 const Mat3x4 = geom.Mat3x4;
 
@@ -80,14 +81,14 @@ pub const Mat4 = extern struct {
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan/DX12 clip
     /// space.
-    pub fn ortho(frustum: Frustum3) Mat4 {
+    pub fn ortho(frustum: OrthoFrustum3) Mat4 {
         return .fromAffine(.ortho(frustum));
     }
 
     test ortho {
         // Left handed ortho frustums
         {
-            const f: Frustum3 = .{
+            const f: OrthoFrustum3 = .{
                 .left = -3.5,
                 .right = 0.1,
                 .top = 4.2,
@@ -117,7 +118,7 @@ pub const Mat4 = extern struct {
 
         // Right handed ortho frustums
         {
-            const f: Frustum3 = .{
+            const f: OrthoFrustum3 = .{
                 .left = -3.5,
                 .right = 0.1,
                 .top = 4.2,
@@ -146,34 +147,44 @@ pub const Mat4 = extern struct {
         }
     }
 
-    pub const PerspectiveOptions = struct {
-        focal_length: f32,
-        frustum: Frustum3,
-    };
-
     /// Returns an perspective projection matrix that converts from view space to Vulkan/DX12 clip
     /// space.
-    pub fn perspective(options: PerspectiveOptions) Mat4 {
-        var p = ortho(options.frustum);
-        const z_sign: f32 = if (options.frustum.far > options.frustum.near) 1.0 else -1.0;
-        p.r3.z = z_sign / options.focal_length;
+    pub fn perspective(f: PerspectiveFrustum) Mat4 {
+        var p = ortho(f.ortho());
+        const z_sign: f32 = if (f.far > f.near) 1.0 else -1.0;
+        p.r3.z = z_sign / f.focal_length;
         p.r3.w = 0;
         return p;
     }
 
     test perspective {
-        const f: Frustum3 = .{
+        try testPerspective(.{
             .left = -2.5,
             .right = 0.2,
             .top = 4.3,
             .bottom = -2.9,
             .near = -1.35,
             .far = 2.1,
-        };
-
-        try testPerspective(.{ .focal_length = 1.0, .frustum = f });
-        try testPerspective(.{ .focal_length = 2.0, .frustum = f });
-        try testPerspective(.{ .focal_length = 3.0, .frustum = f });
+            .focal_length = 1.0,
+        });
+        try testPerspective(.{
+            .left = -2.5,
+            .right = 0.2,
+            .top = 4.3,
+            .bottom = -2.9,
+            .near = -1.35,
+            .far = 2.1,
+            .focal_length = 2.0,
+        });
+        try testPerspective(.{
+            .left = -2.5,
+            .right = 0.2,
+            .top = 4.3,
+            .bottom = -2.9,
+            .near = -1.35,
+            .far = 2.1,
+            .focal_length = 3.0,
+        });
     }
 
     /// Create a rotation matrix from a rotor.
@@ -805,12 +816,9 @@ fn expectVec4ApproxEql(expected: Vec4, actual: Vec4) !void {
     try std.testing.expectApproxEqAbs(expected.w, actual.w, 0.0001);
 }
 
-fn testPerspective(options: Mat4.PerspectiveOptions) !void {
-    const focal_length = options.focal_length;
-    const f = options.frustum;
-
+fn testPerspective(f: PerspectiveFrustum) !void {
     // Create the matrix
-    const m: Mat4 = .perspective(options);
+    const m: Mat4 = .perspective(f);
 
     // Test the upper left corner of the near plane.
     try expectVec4ApproxEql(
@@ -821,7 +829,7 @@ fn testPerspective(options: Mat4.PerspectiveOptions) !void {
             // We're on the near plane, so our depth should be 0
             .z = 0,
             // We want to apply `near / focal_length` perspective scaling
-            .w = f.near / focal_length,
+            .w = f.near / f.focal_length,
         },
         m.timesVec4(.{ .x = f.left, .y = f.top, .z = f.near, .w = 1 }),
     );
@@ -833,11 +841,11 @@ fn testPerspective(options: Mat4.PerspectiveOptions) !void {
             .x = -1,
             .y = -1,
             // The depth should be wherever the focal length lies between the near and far planes
-            .z = ilerp(f.near, f.far, focal_length),
+            .z = ilerp(f.near, f.far, f.focal_length),
             // Since we're at the focal length, there should be no perspective scaling
             .w = 1.0,
         },
-        m.timesVec4(.{ .x = f.left, .y = f.top, .z = focal_length, .w = 1 }),
+        m.timesVec4(.{ .x = f.left, .y = f.top, .z = f.focal_length, .w = 1 }),
     );
 
     // Test the center of the frustum
@@ -849,7 +857,7 @@ fn testPerspective(options: Mat4.PerspectiveOptions) !void {
             .z = 0.5,
             // The perspective scale should be the depth at halfway between the near and far plane,
             // divided by the focal length
-            .w = lerp(f.near, f.far, 0.5) / focal_length,
+            .w = lerp(f.near, f.far, 0.5) / f.focal_length,
         },
         m.timesVec4(.{
             .x = lerp(f.left, f.right, 0.5),
@@ -868,7 +876,7 @@ fn testPerspective(options: Mat4.PerspectiveOptions) !void {
             .z = 1,
             // Our perspective scaling should be the far plane over the focal length, the further
             // the focal length is the less scaling we end up applying here
-            .w = f.far / focal_length,
+            .w = f.far / f.focal_length,
         },
         m.timesVec4(.{ .x = f.right, .y = f.bottom, .z = f.far, .w = 1 }),
     );
@@ -877,9 +885,9 @@ fn testPerspective(options: Mat4.PerspectiveOptions) !void {
     // the previous test, but with perspective divide.
     try expectVec3ApproxEql(
         .{
-            .x = focal_length / f.far,
-            .y = focal_length / f.far,
-            .z = focal_length / f.far,
+            .x = f.focal_length / f.far,
+            .y = f.focal_length / f.far,
+            .z = f.focal_length / f.far,
         },
         m.timesPoint(.{ .x = f.right, .y = f.bottom, .z = f.far }),
     );

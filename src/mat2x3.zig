@@ -4,7 +4,7 @@ const geom = @import("root.zig");
 const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Rotor2 = geom.Rotor2;
-const Frustum2 = geom.Frustum2;
+const OrthoFrustum2 = geom.OrthoFrustum2;
 const Mat2 = geom.Mat2;
 
 /// A row major affine transformation matrix for working in two dimensions.
@@ -43,7 +43,7 @@ pub const Mat2x3 = extern struct {
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan clip
     /// space.
-    pub fn ortho(frustum: Frustum2) @This() {
+    pub fn ortho(frustum: OrthoFrustum2) @This() {
         const width = frustum.right - frustum.left;
         const height = frustum.bottom - frustum.top;
         const x_scale = 2 / width;
@@ -57,7 +57,7 @@ pub const Mat2x3 = extern struct {
     }
 
     test ortho {
-        const f: Frustum2 = .{
+        const f: OrthoFrustum2 = .{
             .left = -2.5,
             .right = 0.3,
             .top = 4.1,

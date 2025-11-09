@@ -5,7 +5,7 @@ const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
-const Frustum3 = geom.Frustum3;
+const OrthoFrustum3 = geom.OrthoFrustum3;
 const Mat3 = geom.Mat3;
 
 /// A row major affine transformation matrix for working in three dimensions.
@@ -47,7 +47,7 @@ pub const Mat3x4 = extern struct {
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan/DX12 clip
     /// space. The far plane may be infinite.
-    pub fn ortho(frustum: Frustum3) Mat3x4 {
+    pub fn ortho(frustum: OrthoFrustum3) Mat3x4 {
         const width = frustum.right - frustum.left;
         const height = frustum.bottom - frustum.top;
         const depth = frustum.far - frustum.near;
@@ -67,7 +67,7 @@ pub const Mat3x4 = extern struct {
     test ortho {
         // Left handed ortho frustums
         {
-            const f: Frustum3 = .{
+            const f: OrthoFrustum3 = .{
                 .left = -3.5,
                 .right = 0.1,
                 .top = 4.2,
@@ -97,7 +97,7 @@ pub const Mat3x4 = extern struct {
 
         // Right handed ortho frustums
         {
-            const f: Frustum3 = .{
+            const f: OrthoFrustum3 = .{
                 .left = -3.5,
                 .right = 0.1,
                 .top = 4.2,
