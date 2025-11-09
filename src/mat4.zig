@@ -1,11 +1,16 @@
 const std = @import("std");
 const geom = @import("root.zig");
 
+const tween = geom.tween;
+const ilerp = tween.interp.ilerp;
+const lerp = tween.interp.lerp;
+
 const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
 const Rotor3 = geom.Rotor3;
-const Frustum3 = geom.Frustum3;
+const OrthoFrustum3 = geom.OrthoFrustum3;
+const PerspectiveFrustum = geom.PerspectiveFrustum;
 const Mat3 = geom.Mat3;
 const Mat3x4 = geom.Mat3x4;
 
@@ -76,14 +81,14 @@ pub const Mat4 = extern struct {
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan/DX12 clip
     /// space.
-    pub fn orthoFromFrustum(frustum: Frustum3) Mat4 {
-        return .fromAffine(.orthoFromFrustum(frustum));
+    pub fn ortho(frustum: OrthoFrustum3) Mat4 {
+        return .fromAffine(.ortho(frustum));
     }
 
-    test orthoFromFrustum {
+    test ortho {
         // Left handed ortho frustums
         {
-            const f: Frustum3 = .{
+            const f: OrthoFrustum3 = .{
                 .left = -3.5,
                 .right = 0.1,
                 .top = 4.2,
@@ -91,7 +96,7 @@ pub const Mat4 = extern struct {
                 .near = 0.15,
                 .far = 3.2,
             };
-            const m = orthoFromFrustum(f);
+            const m = ortho(f);
 
             try expectVec3ApproxEql(
                 .{ .x = -1.0, .y = -1.0, .z = 0.0 },
@@ -100,9 +105,9 @@ pub const Mat4 = extern struct {
             try expectVec3ApproxEql(
                 .{ .x = 0.0, .y = 0.0, .z = 0.5 },
                 m.timesPoint(.{
-                    .x = (f.left + f.right) / 2,
-                    .y = (f.bottom + f.top) / 2,
-                    .z = (f.near + f.far) / 2,
+                    .x = lerp(f.left, f.right, 0.5),
+                    .y = lerp(f.bottom, f.top, 0.5),
+                    .z = lerp(f.near, f.far, 0.5),
                 }),
             );
             try expectVec3ApproxEql(
@@ -113,7 +118,7 @@ pub const Mat4 = extern struct {
 
         // Right handed ortho frustums
         {
-            const f: Frustum3 = .{
+            const f: OrthoFrustum3 = .{
                 .left = -3.5,
                 .right = 0.1,
                 .top = 4.2,
@@ -121,7 +126,7 @@ pub const Mat4 = extern struct {
                 .near = -0.15,
                 .far = -3.2,
             };
-            const m = orthoFromFrustum(f);
+            const m = ortho(f);
 
             try expectVec3ApproxEql(
                 .{ .x = -1.0, .y = -1.0, .z = 0.0 },
@@ -144,44 +149,42 @@ pub const Mat4 = extern struct {
 
     /// Returns an perspective projection matrix that converts from view space to Vulkan/DX12 clip
     /// space.
-    pub fn perspectiveFromFrustum(frustum: Frustum3) Mat4 {
-        var p = orthoFromFrustum(frustum);
-        p.r3.z = if (frustum.far > frustum.near) 1 else -1;
+    pub fn perspective(f: PerspectiveFrustum) Mat4 {
+        var p = ortho(f.ortho());
+        const z_sign: f32 = if (f.far > f.near) 1.0 else -1.0;
+        p.r3.z = z_sign / f.focal_length;
         p.r3.w = 0;
         return p;
     }
 
-    test perspectiveFromFrustum {
-        const f: Frustum3 = .{
+    test perspective {
+        try testPerspective(.{
             .left = -2.5,
             .right = 0.2,
             .top = 4.3,
             .bottom = -2.9,
             .near = -1.35,
             .far = 2.1,
-        };
-        const m = perspectiveFromFrustum(f);
-        try expectVec4ApproxEql(
-            .{ .x = -1, .y = -1, .z = 0, .w = f.near },
-            m.timesVec4(.{ .x = f.left, .y = f.top, .z = f.near, .w = 1 }),
-        );
-        try expectVec4ApproxEql(
-            .{ .x = 0, .y = 0, .z = 0.5, .w = (f.near + f.far) / 2 },
-            m.timesVec4(.{
-                .x = (f.left + f.right) / 2,
-                .y = (f.bottom + f.top) / 2,
-                .z = (f.near + f.far) / 2,
-                .w = 1,
-            }),
-        );
-        try expectVec4ApproxEql(
-            .{ .x = 1, .y = 1, .z = 1, .w = f.far },
-            m.timesVec4(.{ .x = f.right, .y = f.bottom, .z = f.far, .w = 1 }),
-        );
-        try expectVec3ApproxEql(
-            .{ .x = 1 / f.far, .y = 1 / f.far, .z = 1 / f.far },
-            m.timesPoint(.{ .x = f.right, .y = f.bottom, .z = f.far }),
-        );
+            .focal_length = 1.0,
+        });
+        try testPerspective(.{
+            .left = -2.5,
+            .right = 0.2,
+            .top = 4.3,
+            .bottom = -2.9,
+            .near = -1.35,
+            .far = 2.1,
+            .focal_length = 2.0,
+        });
+        try testPerspective(.{
+            .left = -2.5,
+            .right = 0.2,
+            .top = 4.3,
+            .bottom = -2.9,
+            .near = -1.35,
+            .far = 2.1,
+            .focal_length = 3.0,
+        });
     }
 
     /// Create a rotation matrix from a rotor.
@@ -757,7 +760,7 @@ pub const Mat4 = extern struct {
     }
 
     test inverseTs {
-        const m = orthoFromFrustum(.{
+        const m = ortho(.{
             .left = -2.5,
             .right = 0.3,
             .top = 4.1,
@@ -774,7 +777,7 @@ pub const Mat4 = extern struct {
     }
 
     test invertTs {
-        const m = orthoFromFrustum(.{
+        const m = ortho(.{
             .left = -2.5,
             .right = 0.3,
             .top = 4.1,
@@ -811,4 +814,81 @@ fn expectVec4ApproxEql(expected: Vec4, actual: Vec4) !void {
     try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
     try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.0001);
     try std.testing.expectApproxEqAbs(expected.w, actual.w, 0.0001);
+}
+
+fn testPerspective(f: PerspectiveFrustum) !void {
+    // Create the matrix
+    const m: Mat4 = .perspective(f);
+
+    // Test the upper left corner of the near plane.
+    try expectVec4ApproxEql(
+        .{
+            // Should result in the upper left corner of clip space
+            .x = -1,
+            .y = -1,
+            // We're on the near plane, so our depth should be 0
+            .z = 0,
+            // We want to apply `near / focal_length` perspective scaling
+            .w = f.near / f.focal_length,
+        },
+        m.timesVec4(.{ .x = f.left, .y = f.top, .z = f.near, .w = 1 }),
+    );
+
+    // Test the upper left corner of the focal length plane
+    try expectVec4ApproxEql(
+        .{
+            // Should result in the upper left corner of clip space
+            .x = -1,
+            .y = -1,
+            // The depth should be wherever the focal length lies between the near and far planes
+            .z = ilerp(f.near, f.far, f.focal_length),
+            // Since we're at the focal length, there should be no perspective scaling
+            .w = 1.0,
+        },
+        m.timesVec4(.{ .x = f.left, .y = f.top, .z = f.focal_length, .w = 1 }),
+    );
+
+    // Test the center of the frustum
+    try expectVec4ApproxEql(
+        .{
+            // We should end up in the center of NDC space along all dimensions
+            .x = 0,
+            .y = 0,
+            .z = 0.5,
+            // The perspective scale should be the depth at halfway between the near and far plane,
+            // divided by the focal length
+            .w = lerp(f.near, f.far, 0.5) / f.focal_length,
+        },
+        m.timesVec4(.{
+            .x = lerp(f.left, f.right, 0.5),
+            .y = lerp(f.bottom, f.top, 0.5),
+            .z = lerp(f.near, f.far, 0.5),
+            .w = 1,
+        }),
+    );
+
+    // Test bottom right corner of the far plane
+    try expectVec4ApproxEql(
+        .{
+            // We should be in the bottom right corner
+            .x = 1,
+            .y = 1,
+            .z = 1,
+            // Our perspective scaling should be the far plane over the focal length, the further
+            // the focal length is the less scaling we end up applying here
+            .w = f.far / f.focal_length,
+        },
+        m.timesVec4(.{ .x = f.right, .y = f.bottom, .z = f.far, .w = 1 }),
+    );
+
+    // Test the bottom right corner of the far plane with the perspective divide applied. This is
+    // the previous test, but with perspective divide.
+    try expectVec3ApproxEql(
+        .{
+            .x = f.focal_length / f.far,
+            .y = f.focal_length / f.far,
+            .z = f.focal_length / f.far,
+        },
+        m.timesPoint(.{ .x = f.right, .y = f.bottom, .z = f.far }),
+    );
 }
