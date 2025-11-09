@@ -29,7 +29,7 @@ pub const Frustum2 = extern struct {
             .top = 4.1,
             .bottom = -2.2,
         };
-        const proj = Mat3.orthoFromFrustum(f);
+        const proj: Mat3 = .ortho(f);
         const p_view: Vec2 = .{ .x = 1, .y = 2 };
         const p_ndc = proj.timesPoint(p_view);
         const un = f.unprojectOrtho(p_ndc);

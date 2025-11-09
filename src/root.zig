@@ -21,6 +21,7 @@ pub const Frustum3 = @import("frustum3.zig").Frustum3;
 pub const constants = @import("constants.zig");
 pub const hash = @import("hash.zig");
 pub const noise = @import("noise.zig");
+pub const unproject = @import("unproject.zig");
 
 pub const tween = @import("tween");
 

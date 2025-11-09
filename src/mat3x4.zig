@@ -47,7 +47,7 @@ pub const Mat3x4 = extern struct {
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan/DX12 clip
     /// space. The far plane may be infinite.
-    pub fn orthoFromFrustum(frustum: Frustum3) Mat3x4 {
+    pub fn ortho(frustum: Frustum3) Mat3x4 {
         const width = frustum.right - frustum.left;
         const height = frustum.bottom - frustum.top;
         const depth = frustum.far - frustum.near;
@@ -64,7 +64,7 @@ pub const Mat3x4 = extern struct {
         };
     }
 
-    test orthoFromFrustum {
+    test ortho {
         // Left handed ortho frustums
         {
             const f: Frustum3 = .{
@@ -75,7 +75,7 @@ pub const Mat3x4 = extern struct {
                 .near = 0.15,
                 .far = 3.2,
             };
-            const m = orthoFromFrustum(f);
+            const m = ortho(f);
 
             try expectVec3ApproxEql(
                 .{ .x = -1.0, .y = -1.0, .z = 0.0 },
@@ -105,7 +105,7 @@ pub const Mat3x4 = extern struct {
                 .near = -0.15,
                 .far = -3.2,
             };
-            const m = orthoFromFrustum(f);
+            const m = ortho(f);
 
             try expectVec3ApproxEql(
                 .{ .x = -1.0, .y = -1.0, .z = 0.0 },
@@ -692,7 +692,7 @@ pub const Mat3x4 = extern struct {
     }
 
     test inverseTs {
-        const m = orthoFromFrustum(.{
+        const m = ortho(.{
             .left = -2.5,
             .right = 0.3,
             .top = 4.1,
@@ -709,7 +709,7 @@ pub const Mat3x4 = extern struct {
     }
 
     test invertTs {
-        const m = orthoFromFrustum(.{
+        const m = ortho(.{
             .left = -2.5,
             .right = 0.3,
             .top = 4.1,

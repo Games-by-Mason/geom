@@ -70,18 +70,18 @@ pub const Mat3 = extern struct {
 
     /// Returns an orthographic projection matrix that converts from view space to Vulkan clip
     /// space.
-    pub fn orthoFromFrustum(frustum: Frustum2) @This() {
-        return .fromAffine(.orthoFromFrustum(frustum));
+    pub fn ortho(frustum: Frustum2) @This() {
+        return .fromAffine(.ortho(frustum));
     }
 
-    test orthoFromFrustum {
+    test ortho {
         const f: Frustum2 = .{
             .left = -2.5,
             .right = 0.3,
             .top = 4.1,
             .bottom = -2.2,
         };
-        const m = orthoFromFrustum(f);
+        const m = ortho(f);
         try expectVec2ApproxEql(
             .{ .x = -1, .y = -1 },
             m.timesPoint(.{ .x = f.left, .y = f.top }),
@@ -621,7 +621,7 @@ pub const Mat3 = extern struct {
     }
 
     test inverseTs {
-        const m = orthoFromFrustum(.{
+        const m = ortho(.{
             .left = -2.5,
             .right = 0.3,
             .top = 4.1,
@@ -636,7 +636,7 @@ pub const Mat3 = extern struct {
     }
 
     test inverTs {
-        const m = orthoFromFrustum(.{
+        const m = ortho(.{
             .left = -2.5,
             .right = 0.3,
             .top = 4.1,
