@@ -8,6 +8,7 @@ const Vec3 = geom.Vec3;
 const Bivec3 = geom.Bivec3;
 
 const lerp = tween.interp.lerp;
+const clamp01 = tween.interp.clamp01;
 
 /// A three dimensional rotor. Rotors are a generalized form of quaternions which are used for
 /// rotation. Unlike quaternions, rotors generalize to all dimensions. Rotors can represent up to
@@ -707,6 +708,27 @@ pub const Rotor3 = extern struct {
         try testInterpolation(true, Rotor3.slerp);
     }
 
+    /// Similar to `slerp`, but `t` is clamped to [0, 1].
+    pub fn slerpClamped(start: Rotor3, end: Rotor3, t: f32) Rotor3 {
+        return slerp(start, end, clamp01(t));
+    }
+
+    test slerpClamped {
+        const a: Rotor3 = .{
+            .yz = 1,
+            .xz = 2,
+            .yx = 3,
+            .a = 4,
+        };
+        const b: Rotor3 = .{
+            .yz = 5,
+            .xz = 6,
+            .yx = 7,
+            .a = 8,
+        };
+        try std.testing.expectEqual(a.slerp(b, 1), a.slerpClamped(b, 10));
+    }
+
     /// Linearly interpolates between the two rotors, then normalizes the result. Prefer this over
     /// `slerp`.
     ///
@@ -723,6 +745,27 @@ pub const Rotor3 = extern struct {
 
     test nlerp {
         try testInterpolation(false, Rotor3.nlerp);
+    }
+
+    /// Similar to `nlerp`, but `t` is clamped to [0, 1].
+    pub fn nlerpClamped(start: Rotor3, end: Rotor3, t: f32) Rotor3 {
+        return nlerp(start, end, clamp01(t));
+    }
+
+    test nlerpClamped {
+        const a: Rotor3 = .{
+            .yz = 1,
+            .xz = 2,
+            .yx = 3,
+            .a = 4,
+        };
+        const b: Rotor3 = .{
+            .yz = 5,
+            .xz = 6,
+            .yx = 7,
+            .a = 8,
+        };
+        try std.testing.expectEqual(a.nlerp(b, 1), a.nlerpClamped(b, 10));
     }
 };
 
