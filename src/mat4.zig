@@ -150,18 +150,22 @@ pub const Mat4 = extern struct {
     /// Returns an perspective projection matrix that converts from view space to Vulkan/DX12 clip
     /// space.
     pub fn perspective(f: PerspectiveFrustum3) Mat4 {
-        var p = ortho(.{
-            .left = f.sensor.left,
-            .right = f.sensor.right,
-            .top = f.sensor.top,
-            .bottom = f.sensor.bottom,
-            .near = f.near,
-            .far = f.far,
-        });
-        const z_sign: f32 = if (f.far > f.near) 1.0 else -1.0;
-        p.r3.z = z_sign / f.focal_length;
-        p.r3.w = 0;
-        return p;
+        const width = f.sensor.right - f.sensor.left;
+        const height = f.sensor.bottom - f.sensor.top;
+        const depth = f.far - f.near;
+        const x_scale = 2 / width;
+        const y_scale = 2 / height;
+        const z_scale = f.far / (depth * f.focal_length);
+        const x_off = -(f.sensor.right + f.sensor.left) / width;
+        const y_off = -(f.sensor.top + f.sensor.bottom) / height;
+        const z_off = -f.near * z_scale;
+        const zw_factor = std.math.sign(depth) / f.focal_length;
+        return .{
+            .r0 = .{ .x = x_scale, .y = 0, .z = 0, .w = x_off },
+            .r1 = .{ .x = 0, .y = y_scale, .z = 0, .w = y_off },
+            .r2 = .{ .x = 0, .y = 0, .z = z_scale, .w = z_off },
+            .r3 = .{ .x = 0, .y = 0, .z = zw_factor, .w = 0 },
+        };
     }
 
     test perspective {
@@ -172,7 +176,18 @@ pub const Mat4 = extern struct {
                 .top = 4.3,
                 .bottom = -2.9,
             },
-            .near = -1.35,
+            .near = 0.1,
+            .far = 1,
+            .focal_length = 1.0,
+        });
+        try testPerspective(.{
+            .sensor = .{
+                .left = -2.5,
+                .right = 0.2,
+                .top = 4.3,
+                .bottom = -2.9,
+            },
+            .near = 0.35,
             .far = 2.1,
             .focal_length = 1.0,
         });
@@ -183,7 +198,7 @@ pub const Mat4 = extern struct {
                 .top = 4.3,
                 .bottom = -2.9,
             },
-            .near = -1.35,
+            .near = 0.2,
             .far = 2.1,
             .focal_length = 2.0,
         });
@@ -194,10 +209,204 @@ pub const Mat4 = extern struct {
                 .top = 4.3,
                 .bottom = -2.9,
             },
-            .near = -1.35,
-            .far = 2.1,
+            .near = 0.5,
+            .far = 5.1,
             .focal_length = 3.0,
         });
+    }
+
+    fn testPerspective(f: PerspectiveFrustum3) !void {
+        // Create the matrix
+        const m: Mat4 = .perspective(f);
+
+        // Test points on the near plane
+        {
+            // Center
+            try expectVec4ApproxEql(
+                .{
+                    .x = 0,
+                    .y = 0,
+                    .z = 0,
+                    .w = f.near / f.focal_length,
+                },
+                m.timesVec4(.{
+                    .x = lerp(f.sensor.left, f.sensor.right, 0.5),
+                    .y = lerp(f.sensor.top, f.sensor.bottom, 0.5),
+                    .z = f.near,
+                    .w = 1,
+                }),
+            );
+
+            // Upper left
+            try expectVec4ApproxEql(
+                .{
+                    .x = -1,
+                    .y = -1,
+                    .z = 0,
+                    .w = f.near / f.focal_length,
+                },
+                m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.top, .z = f.near, .w = 1 }),
+            );
+
+            // Upper right
+            try expectVec4ApproxEql(
+                .{
+                    .x = 1,
+                    .y = -1,
+                    .z = 0,
+                    .w = f.near / f.focal_length,
+                },
+                m.timesVec4(.{ .x = f.sensor.right, .y = f.sensor.top, .z = f.near, .w = 1 }),
+            );
+
+            // Lower left
+            try expectVec4ApproxEql(
+                .{
+                    .x = -1,
+                    .y = 1,
+                    .z = 0,
+                    .w = f.near / f.focal_length,
+                },
+                m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.bottom, .z = f.near, .w = 1 }),
+            );
+
+            // Lower right
+            try expectVec4ApproxEql(
+                .{
+                    .x = 1,
+                    .y = 1,
+                    .z = 0,
+                    .w = f.near / f.focal_length,
+                },
+                m.timesVec4(.{ .x = f.sensor.right, .y = f.sensor.bottom, .z = f.near, .w = 1 }),
+            );
+        }
+
+        // Test the focal length plane
+        {
+            // Center
+            try expectVec4ApproxEql(
+                .{
+                    .x = 0,
+                    .y = 0,
+                    .z = f.far * ilerp(f.near, f.far, f.focal_length) / f.focal_length,
+                    .w = 1,
+                },
+                m.timesVec4(.{
+                    .x = lerp(f.sensor.left, f.sensor.right, 0.5),
+                    .y = lerp(f.sensor.top, f.sensor.bottom, 0.5),
+                    .z = f.focal_length,
+                    .w = 1,
+                }),
+            );
+
+            // Upper left
+            try expectVec4ApproxEql(
+                .{
+                    .x = -1,
+                    .y = -1,
+                    .z = f.far * ilerp(f.near, f.far, f.focal_length) / f.focal_length,
+                    .w = 1,
+                },
+                m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.top, .z = f.focal_length, .w = 1 }),
+            );
+
+            // Upper right
+            try expectVec4ApproxEql(
+                .{
+                    .x = 1,
+                    .y = -1,
+                    .z = f.far * ilerp(f.near, f.far, f.focal_length) / f.focal_length,
+                    .w = 1,
+                },
+                m.timesVec4(.{ .x = f.sensor.right, .y = f.sensor.top, .z = f.focal_length, .w = 1 }),
+            );
+
+            // Lower left
+            try expectVec4ApproxEql(
+                .{
+                    .x = -1,
+                    .y = 1,
+                    .z = f.far * ilerp(f.near, f.far, f.focal_length) / f.focal_length,
+                    .w = 1,
+                },
+                m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.bottom, .z = f.focal_length, .w = 1 }),
+            );
+
+            // Lower right
+            try expectVec4ApproxEql(
+                .{
+                    .x = 1,
+                    .y = 1,
+                    .z = f.far * ilerp(f.near, f.far, f.focal_length) / f.focal_length,
+                    .w = 1,
+                },
+                m.timesVec4(.{ .x = f.sensor.right, .y = f.sensor.bottom, .z = f.focal_length, .w = 1 }),
+            );
+        }
+
+        // Test points on the far plane
+        {
+            // Center
+            try expectVec4ApproxEql(
+                .{
+                    .x = 0,
+                    .y = 0,
+                    .z = f.far / f.focal_length,
+                    .w = f.far / f.focal_length,
+                },
+                m.timesVec4(.{
+                    .x = lerp(f.sensor.left, f.sensor.right, 0.5),
+                    .y = lerp(f.sensor.top, f.sensor.bottom, 0.5),
+                    .z = f.far,
+                    .w = 1,
+                }),
+            );
+
+            // Upper left
+            try expectVec4ApproxEql(
+                .{
+                    .x = -1,
+                    .y = -1,
+                    .z = f.far / f.focal_length,
+                    .w = f.far / f.focal_length,
+                },
+                m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.top, .z = f.far, .w = 1 }),
+            );
+
+            // Upper right
+            try expectVec4ApproxEql(
+                .{
+                    .x = 1,
+                    .y = -1,
+                    .z = f.far / f.focal_length,
+                    .w = f.far / f.focal_length,
+                },
+                m.timesVec4(.{ .x = f.sensor.right, .y = f.sensor.top, .z = f.far, .w = 1 }),
+            );
+
+            // Lower left
+            try expectVec4ApproxEql(
+                .{
+                    .x = -1,
+                    .y = 1,
+                    .z = f.far / f.focal_length,
+                    .w = f.far / f.focal_length,
+                },
+                m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.bottom, .z = f.far, .w = 1 }),
+            );
+
+            // Lower right
+            try expectVec4ApproxEql(
+                .{
+                    .x = 1,
+                    .y = 1,
+                    .z = f.far / f.focal_length,
+                    .w = f.far / f.focal_length,
+                },
+                m.timesVec4(.{ .x = f.sensor.right, .y = f.sensor.bottom, .z = f.far, .w = 1 }),
+            );
+        }
     }
 
     /// Create a rotation matrix from a rotor.
@@ -827,81 +1036,4 @@ fn expectVec4ApproxEql(expected: Vec4, actual: Vec4) !void {
     try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
     try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.0001);
     try std.testing.expectApproxEqAbs(expected.w, actual.w, 0.0001);
-}
-
-fn testPerspective(f: PerspectiveFrustum3) !void {
-    // Create the matrix
-    const m: Mat4 = .perspective(f);
-
-    // Test the upper left corner of the near plane.
-    try expectVec4ApproxEql(
-        .{
-            // Should result in the upper left corner of clip space
-            .x = -1,
-            .y = -1,
-            // We're on the near plane, so our depth should be 0
-            .z = 0,
-            // We want to apply `near / focal_length` perspective scaling
-            .w = f.near / f.focal_length,
-        },
-        m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.top, .z = f.near, .w = 1 }),
-    );
-
-    // Test the upper left corner of the focal length plane
-    try expectVec4ApproxEql(
-        .{
-            // Should result in the upper left corner of clip space
-            .x = -1,
-            .y = -1,
-            // The depth should be wherever the focal length lies between the near and far planes
-            .z = ilerp(f.near, f.far, f.focal_length),
-            // Since we're at the focal length, there should be no perspective scaling
-            .w = 1.0,
-        },
-        m.timesVec4(.{ .x = f.sensor.left, .y = f.sensor.top, .z = f.focal_length, .w = 1 }),
-    );
-
-    // Test the center of the frustum
-    try expectVec4ApproxEql(
-        .{
-            // We should end up in the center of NDC space along all dimensions
-            .x = 0,
-            .y = 0,
-            .z = 0.5,
-            // The perspective scale should be the depth at halfway between the near and far plane,
-            // divided by the focal length
-            .w = lerp(f.near, f.far, 0.5) / f.focal_length,
-        },
-        m.timesVec4(.{
-            .x = lerp(f.sensor.left, f.sensor.right, 0.5),
-            .y = lerp(f.sensor.bottom, f.sensor.top, 0.5),
-            .z = lerp(f.near, f.far, 0.5),
-            .w = 1,
-        }),
-    );
-
-    // Test bottom right corner of the far plane
-    try expectVec4ApproxEql(
-        .{
-            // We should be in the bottom right corner
-            .x = 1,
-            .y = 1,
-            .z = 1,
-            // Our perspective scaling should be the far plane over the focal length, the further
-            // the focal length is the less scaling we end up applying here
-            .w = f.far / f.focal_length,
-        },
-        m.timesVec4(.{ .x = f.sensor.right, .y = f.sensor.bottom, .z = f.far, .w = 1 }),
-    );
-
-    // Test the bottom right corner of the far plane with the perspective divide applied. This is
-    // the previous test, but with perspective divide.
-    try expectVec3ApproxEql(
-        .{
-            .x = f.focal_length / f.far,
-            .y = f.focal_length / f.far,
-            .z = f.focal_length / f.far,
-        },
-        m.timesPoint(.{ .x = f.sensor.right, .y = f.sensor.bottom, .z = f.far }),
-    );
 }
