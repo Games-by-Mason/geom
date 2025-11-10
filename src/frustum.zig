@@ -5,6 +5,7 @@ const remap = geom.tween.interp.remap;
 
 const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
+const Vec4 = geom.Vec4;
 const Mat3 = geom.Mat3;
 const Mat4 = geom.Mat4;
 
@@ -85,6 +86,55 @@ pub const PerspectiveFrustum3 = extern struct {
     /// The focal length.
     focal_length: f32,
 
+    pub const FromFovOptions = struct {
+        /// The vertical field of view in radians.
+        fovy: f32,
+        /// The aspect ratio.
+        aspect_ratio: f32,
+        /// The near plane.
+        near: f32,
+        /// The far plane.
+        far: f32,
+        /// The focal length.
+        focal_length: f32 = 1.0,
+    };
+
+    /// Creates a frustum using a field of view instead of sensor extents.
+    pub fn fromFov(options: FromFovOptions) PerspectiveFrustum3 {
+        const half_height = @tan(options.fovy * 0.5);
+        const half_width = half_height * options.aspect_ratio;
+        return .{
+            .sensor = .{
+                .left = -half_width,
+                .right = half_width,
+                .top = -half_height,
+                .bottom = half_height,
+            },
+            .near = options.near,
+            .far = options.far,
+            .focal_length = options.focal_length,
+        };
+    }
+
+    test fromFov {
+        const options: FromFovOptions = .{
+            .fovy = std.math.degreesToRadians(60),
+            .aspect_ratio = 16.0 / 9.0,
+            .near = 0.1,
+            .far = 1000.0,
+        };
+        const m: Mat4 = .perspective(.fromFov(options));
+        const g = 1.0 / @tan(options.fovy * 0.5);
+        const k = options.far / (options.far - options.near);
+        const expected: Mat4 = .{
+            .r0 = .{ .x = g / options.aspect_ratio, .y = 0, .z = 0, .w = 0 },
+            .r1 = .{ .x = 0.0, .y = g, .z = 0, .w = 0 },
+            .r2 = .{ .x = 0.0, .y = 0, .z = k, .w = -options.near * k },
+            .r3 = .{ .x = 0.0, .y = 0, .z = 1, .w = 0 },
+        };
+        try std.testing.expectEqual(expected, m);
+    }
+
     /// Undoes the perspective projection specified by the given frustum on the given normalized
     /// device coordinate to get back a point in view space at the specified depth.
     pub fn unproject(self: PerspectiveFrustum3, ndc: Vec2, view_z: f32) Vec3 {
@@ -149,4 +199,18 @@ fn expectVec3ApproxEql(expected: Vec3, actual: Vec3) !void {
     try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
     try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
     try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.0001);
+}
+
+fn expectVec4ApproxEql(expected: Vec4, actual: Vec4) !void {
+    try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.z, actual.z, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.w, actual.w, 0.0001);
+}
+
+fn expectMat4ApproxEql(expected: Mat4, actual: Mat4) !void {
+    try std.testing.expectApproxEqAbs(expected.r0, actual.r0, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.r1, actual.r1, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.r2, actual.r2, 0.0001);
+    try std.testing.expectApproxEqAbs(expected.r3, actual.r3, 0.0001);
 }
