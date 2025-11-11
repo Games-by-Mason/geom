@@ -2,9 +2,9 @@
 
 Geometry and related math for game development.
 
-# Status
+# Documentation
 
-I'm going to be fleshing this out into a more cohesive library as I require more functionality.
+Docs can be found [here](https://docs.gamesbymason.com/geom/), you can generate up to date docs yourself with `zig build docs`.
 
 # "For Game Development"?
 
