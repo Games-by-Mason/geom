@@ -1,6 +1,8 @@
 const std = @import("std");
 const geom = @import("root.zig");
 
+const math = std.math;
+
 const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Vec4 = geom.Vec4;
@@ -143,10 +145,10 @@ pub const Mat3x4 = extern struct {
         const m = Mat3x4.rotation(Rotor3.fromTo(.y_pos, .x_pos).nlerp(.identity, 0.5));
         try std.testing.expectEqual(Vec3.zero, m.getTranslation());
 
-        try std.testing.expectApproxEqAbs(@cos(std.math.pi / 4.0), m.r0.x, 0.01);
-        try std.testing.expectApproxEqAbs(@sin(std.math.pi / 4.0), m.r0.y, 0.01);
-        try std.testing.expectApproxEqAbs(-@sin(std.math.pi / 4.0), m.r1.x, 0.01);
-        try std.testing.expectApproxEqAbs(@cos(std.math.pi / 4.0), m.r1.y, 0.01);
+        try std.testing.expectApproxEqAbs(@cos(math.pi / 4.0), m.r0.x, 0.01);
+        try std.testing.expectApproxEqAbs(@sin(math.pi / 4.0), m.r0.y, 0.01);
+        try std.testing.expectApproxEqAbs(-@sin(math.pi / 4.0), m.r1.x, 0.01);
+        try std.testing.expectApproxEqAbs(@cos(math.pi / 4.0), m.r1.y, 0.01);
 
         try expectVec3ApproxEql(
             .y_pos,
@@ -330,7 +332,7 @@ pub const Mat3x4 = extern struct {
     test "rotatedTranslatedScaled" {
         var m = Mat3x4.identity;
         m = m.translated(.y_pos);
-        m = m.rotated(.fromPlaneAngle(.yx_plane, std.math.pi));
+        m = m.rotated(.fromPlaneAngle(.yx_plane, math.pi));
         m = m.scaled(.splat(0.5));
         m = m.translated(.{ .x = 0.0, .y = 0.5, .z = 0.0 });
         try expectVec3ApproxEql(.{ .x = 0.0, .y = 0.0, .z = 0.0 }, m.timesPoint(.zero));
@@ -530,12 +532,36 @@ pub const Mat3x4 = extern struct {
 
     /// Gets the scale of the matrix.
     pub fn getScale(self: @This()) Vec3 {
-        return .{ .x = self.r0.x, .y = self.r1.y, .z = self.r2.z };
+        return .{
+            .x = self.r0.xyz().mag(),
+            .y = self.r1.xyz().mag(),
+            .z = self.r2.xyz().mag(),
+        };
     }
 
     test getScale {
+        {
+            const s: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
+            try std.testing.expectEqual(s, scale(s).getScale());
+        }
+        {
+            const s: Vec3 = .splat(2);
+            try expectVec3ApproxEql(s, scale(s)
+                .rotated(.fromPlaneAngle(.yx_plane, 0.5 * math.pi))
+                .rotated(.fromPlaneAngle(.xz_plane, 0.2 * math.pi))
+                .translated(.{ .x = 0.5, .y = 0.6, .z = 0.7 })
+                .getScale());
+        }
+    }
+
+    /// Gets the main diagonal of the matrix.
+    pub fn getDiagonal(self: @This()) Vec3 {
+        return .{ .x = self.r0.x, .y = self.r1.y, .z = self.r2.z };
+    }
+
+    test getDiagonal {
         const s: Vec3 = .{ .x = 2, .y = 3, .z = 4 };
-        try std.testing.expectEqual(s, scale(s).getScale());
+        try std.testing.expectEqual(s, scale(s).getDiagonal());
     }
 
     /// Returns a vector representing a point transformed by this matrix.
@@ -683,7 +709,7 @@ pub const Mat3x4 = extern struct {
     /// projections.
     pub fn inverseTs(self: Mat3x4) Mat3x4 {
         const t = self.getTranslation();
-        const s = self.getScale();
+        const s = self.getDiagonal();
         return .{
             .r0 = .{ .x = 1.0 / s.x, .y = 0, .z = 0, .w = -t.x / s.x },
             .r1 = .{ .x = 0, .y = 1.0 / s.y, .z = 0, .w = -t.y / s.y },

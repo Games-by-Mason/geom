@@ -1,6 +1,8 @@
 const std = @import("std");
 const geom = @import("root.zig");
 
+const math = std.math;
+
 const Rotor2 = geom.Rotor2;
 const Vec2 = geom.Vec2;
 
@@ -46,12 +48,12 @@ pub const Mat2 = extern struct {
 
     test rotation {
         const m = Mat2.rotation(Rotor2.fromTo(.y_pos, .x_pos).nlerp(.identity, 0.5));
-        try std.testing.expectApproxEqAbs(std.math.pi / 4.0, m.getRotation(), 0.01);
+        try std.testing.expectApproxEqAbs(math.pi / 4.0, testRotation(m), 0.01);
 
-        try std.testing.expectApproxEqAbs(@cos(std.math.pi / 4.0), m.r0.x, 0.01);
-        try std.testing.expectApproxEqAbs(@sin(std.math.pi / 4.0), m.r0.y, 0.01);
-        try std.testing.expectApproxEqAbs(-@sin(std.math.pi / 4.0), m.r1.x, 0.01);
-        try std.testing.expectApproxEqAbs(@cos(std.math.pi / 4.0), m.r1.y, 0.01);
+        try std.testing.expectApproxEqAbs(@cos(math.pi / 4.0), m.r0.x, 0.01);
+        try std.testing.expectApproxEqAbs(@sin(math.pi / 4.0), m.r0.y, 0.01);
+        try std.testing.expectApproxEqAbs(-@sin(math.pi / 4.0), m.r1.x, 0.01);
+        try std.testing.expectApproxEqAbs(@cos(math.pi / 4.0), m.r1.y, 0.01);
 
         try expectVec2ApproxEql(
             .y_pos,
@@ -103,7 +105,7 @@ pub const Mat2 = extern struct {
             Vec2{ .x = 0.5, .y = -6.0 },
             Mat2.scale(.{ .x = 0.5, .y = -2.0 }).timesVec2(.{ .x = 1.0, .y = 3.0 }),
         );
-        try std.testing.expectEqual(0.0, Mat2.scale(.{ .x = 0.5, .y = -2.0 }).getRotation());
+        try std.testing.expectEqual(0.0, testRotation(.scale(.{ .x = 0.5, .y = -2.0 })));
     }
 
     pub fn scaled(self: @This(), delta: Vec2) @This() {
@@ -127,7 +129,7 @@ pub const Mat2 = extern struct {
 
     test "rotatedScaled" {
         var m = Mat2.identity;
-        m = m.rotated(.fromAngle(std.math.pi));
+        m = m.rotated(.fromAngle(math.pi));
         m = m.scaled(.splat(0.5));
         try expectVec2ApproxEql(Vec2{ .x = -0.5, .y = 0.0 }, m.timesVec2(.x_pos));
     }
@@ -212,27 +214,36 @@ pub const Mat2 = extern struct {
         try std.testing.expectEqual(m, s.times(r));
     }
 
-    /// Gets the rotation of the matrix in radians. Useful for human readable output, use for
-    /// computation is discouraged.
-    pub fn getRotation(self: @This()) f32 {
-        const cos = self.r0.x;
-        const sin = self.r0.y;
-        return std.math.atan2(sin, cos);
-    }
-
-    test getRotation {
-        const r: Mat2 = .rotation(.fromTo(.y_pos, .x_pos));
-        try std.testing.expectEqual(std.math.pi / 2.0, r.getRotation());
-    }
-
     /// Gets the scale of the matrix.
     pub fn getScale(self: @This()) Vec2 {
-        return .{ .x = self.r0.x, .y = self.r1.y };
+        return .{
+            .x = self.r0.mag(),
+            .y = self.r1.mag(),
+        };
     }
 
     test getScale {
-        const s: Vec2 = .{ .x = 2, .y = 3 };
-        try std.testing.expectEqual(s, scale(s).getScale());
+        {
+            const s: Vec2 = .{ .x = 2, .y = 3 };
+            try std.testing.expectEqual(s, scale(s).getScale());
+        }
+        {
+            const s: Vec2 = .splat(2);
+            try expectVec2ApproxEql(s, scale(s).rotated(.fromAngle(0.5 * math.pi)).getScale());
+        }
+    }
+
+    /// Gets the main diagonal of the matrix.
+    pub fn getDiagonal(self: @This()) Vec2 {
+        return .{ .x = self.r0.x, .y = self.r1.y };
+    }
+
+    test {
+        const m: Mat2 = .{
+            .r0 = .{ .x = 1, .y = 2 },
+            .r1 = .{ .x = 3, .y = 4 },
+        };
+        try std.testing.expectEqual(Vec2{ .x = 1, .y = 4 }, m.getDiagonal());
     }
 
     /// Multiplies the matrix by a homogeneous vec3.
@@ -305,4 +316,16 @@ fn expectMat2ApproxEq(lhs: Mat2, rhs: Mat2) !void {
 fn expectVec2ApproxEql(expected: Vec2, actual: Vec2) !void {
     try std.testing.expectApproxEqAbs(expected.x, actual.x, 0.0001);
     try std.testing.expectApproxEqAbs(expected.y, actual.y, 0.0001);
+}
+
+/// Gets the rotation of the matrix in radians assuming no scale/sheer is applied. Used in tests.
+fn testRotation(self: Mat2) f32 {
+    const cos = self.r0.x;
+    const sin = self.r0.y;
+    return std.math.atan2(sin, cos);
+}
+
+test testRotation {
+    const r: Mat2 = .rotation(.fromTo(.y_pos, .x_pos));
+    try std.testing.expectEqual(math.pi / 2.0, testRotation(r));
 }

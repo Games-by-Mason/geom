@@ -1,6 +1,8 @@
 const std = @import("std");
 const geom = @import("root.zig");
 
+const math = std.math;
+
 const Vec2 = geom.Vec2;
 const Vec3 = geom.Vec3;
 const Rotor2 = geom.Rotor2;
@@ -110,13 +112,13 @@ pub const Mat3 = extern struct {
 
     test rotation {
         const m = Mat3.rotation(Rotor2.fromTo(.y_pos, .x_pos).nlerp(.identity, 0.5));
-        try std.testing.expectApproxEqAbs(std.math.pi / 4.0, m.getRadians(), 0.01);
+        try std.testing.expectApproxEqAbs(math.pi / 4.0, m.getRadians(), 0.01);
         try std.testing.expectEqual(Vec2.zero, m.getTranslation());
 
-        try std.testing.expectApproxEqAbs(@cos(std.math.pi / 4.0), m.r0.x, 0.01);
-        try std.testing.expectApproxEqAbs(@sin(std.math.pi / 4.0), m.r0.y, 0.01);
-        try std.testing.expectApproxEqAbs(-@sin(std.math.pi / 4.0), m.r1.x, 0.01);
-        try std.testing.expectApproxEqAbs(@cos(std.math.pi / 4.0), m.r1.y, 0.01);
+        try std.testing.expectApproxEqAbs(@cos(math.pi / 4.0), m.r0.x, 0.01);
+        try std.testing.expectApproxEqAbs(@sin(math.pi / 4.0), m.r0.y, 0.01);
+        try std.testing.expectApproxEqAbs(-@sin(math.pi / 4.0), m.r1.x, 0.01);
+        try std.testing.expectApproxEqAbs(@cos(math.pi / 4.0), m.r1.y, 0.01);
 
         try expectVec2ApproxEql(
             .y_pos,
@@ -270,7 +272,7 @@ pub const Mat3 = extern struct {
     test "rotatedTranslatedScaled" {
         var m = Mat3.identity;
         m = m.translated(.y_pos);
-        m = m.rotated(.fromAngle(std.math.pi));
+        m = m.rotated(.fromAngle(math.pi));
         m = m.scaled(.splat(0.5));
         m = m.translated(.{ .x = 0.0, .y = 0.5 });
         try expectVec2ApproxEql(Vec2{ .x = 0.0, .y = 0.0 }, m.timesPoint(.zero));
@@ -444,7 +446,7 @@ pub const Mat3 = extern struct {
 
     test getRadians {
         const r: Mat3 = .rotation(.fromTo(.y_pos, .x_pos));
-        try std.testing.expectEqual(std.math.pi / 2.0, r.getRadians());
+        try std.testing.expectEqual(math.pi / 2.0, r.getRadians());
     }
 
     /// Extracts the rotation matrix.
@@ -474,12 +476,34 @@ pub const Mat3 = extern struct {
 
     /// Gets the scale of the matrix.
     pub fn getScale(self: @This()) Vec2 {
-        return .{ .x = self.r0.x, .y = self.r1.y };
+        return .{
+            .x = self.r0.xy().mag(),
+            .y = self.r1.xy().mag(),
+        };
     }
 
     test getScale {
+        {
+            const s: Vec2 = .{ .x = 2, .y = 3 };
+            try std.testing.expectEqual(s, scale(s).getScale());
+        }
+        {
+            const s: Vec2 = .splat(2);
+            try expectVec2ApproxEql(s, scale(s)
+                .rotated(.fromAngle(0.5 * math.pi))
+                .translated(.{ .x = 0.5, .y = 0.8 })
+                .getScale());
+        }
+    }
+
+    /// Gets the main diagonal of the matrix.
+    pub fn getDiagonal(self: @This()) Vec3 {
+        return .{ .x = self.r0.x, .y = self.r1.y, .z = self.r2.z };
+    }
+
+    test getDiagonal {
         const s: Vec2 = .{ .x = 2, .y = 3 };
-        try std.testing.expectEqual(s, scale(s).getScale());
+        try std.testing.expectEqual(s.withZ(1), scale(s).getDiagonal());
     }
 
     /// Returns a vector representing a point transformed by this matrix.
